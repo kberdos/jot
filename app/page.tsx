@@ -1,5 +1,4 @@
 "use client"
-import { useState } from "react";
 import { create } from "zustand"
 
 
@@ -42,6 +41,9 @@ const useCameraStore = create<CameraStore>((set) => ({
 
 
 const NoteObj = ({ note }: { note: Note }) => {
+  const updateNote = useNoteStore(state => state.updateNote)
+  const camera = useCameraStore(state => state.camera)
+
   const handlePointerDown = (e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId)
   }
@@ -50,6 +52,10 @@ const NoteObj = ({ note }: { note: Note }) => {
     if (e.buttons !== 1) return;
     console.log("moving")
     console.log(e.movementX, e.movementY)
+    updateNote(note.id, {
+      x: note.x + e.movementX / camera.zoom,
+      y: note.y + e.movementY / camera.zoom,
+    })
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -79,7 +85,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 const Canvas = () => {
   const { camera, setCamera } = useCameraStore()
-  const { notes, updateNote } = useNoteStore()
+  const notes = useNoteStore(state => state.notes)
   return (
     <div className="w-screen h-screen overflow-hidden"
       style={{
