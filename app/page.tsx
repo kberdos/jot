@@ -5,6 +5,9 @@ import { create } from "zustand"
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
 
+const DEFAULT_NOTE_WIDTH = 200
+const DEFAULT_NOTE_COLOR = "#FEFF9C"
+
 interface Camera {
   x: number;
   y: number;
@@ -12,15 +15,18 @@ interface Camera {
 }
 
 interface Note {
-  id: number;
+  id: string;
   x: number;
   y: number;
+  width: number;
+  height: number
   color: string;
 }
 
 interface NoteStore {
   notes: Note[];
-  updateNote: (id: number, changes: Partial<Note>) => void;
+  updateNote: (id: string, changes: Partial<Note>) => void;
+  newNote: (x: number, y: number) => void;
 }
 
 interface CameraStore {
@@ -30,9 +36,19 @@ interface CameraStore {
 }
 
 const useNoteStore = create<NoteStore>((set) => ({
-  notes: [{ id: 0, x: 100, y: 100, color: "#ff0000" }, { id: 1, x: 200, y: 300, color: "#00ffff" }],
+  notes: [{ id: "0", x: 300, y: 300, width: DEFAULT_NOTE_WIDTH, height: DEFAULT_NOTE_WIDTH, color: DEFAULT_NOTE_COLOR }],
   updateNote: (id, changes) => set(state => ({
     notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
+  })),
+  newNote: (x, y) => set(state => ({
+    notes: [...state.notes, {
+      id: crypto.randomUUID(),
+      x: x,
+      y: y,
+      width: DEFAULT_NOTE_WIDTH,
+      height: DEFAULT_NOTE_WIDTH,
+      color: DEFAULT_NOTE_COLOR
+    }],
   }))
 }))
 
@@ -42,6 +58,7 @@ const useCameraStore = create<CameraStore>((set) => ({
     camera: { ...state.camera, ...changes }
   })),
   resetCamera: () => set(_ => ({
+    // TODO: smooth gradient back to these positions
     camera: { x: 0, y: 0, zoom: 1 }
   })),
 }))
@@ -61,8 +78,6 @@ const NoteObj = ({ note }: { note: Note }) => {
   const handlePointerMove = (e: React.PointerEvent) => {
     e.stopPropagation()
     if (e.buttons !== 1) return;
-    console.log("moving")
-    console.log(e.movementX, e.movementY)
     updateNote(note.id, {
       x: note.x + e.movementX / camera.zoom,
       y: note.y + e.movementY / camera.zoom,
@@ -84,15 +99,17 @@ const NoteObj = ({ note }: { note: Note }) => {
     >
       <div style={{
         backgroundColor: note.color,
+        width: `${note.width}px`,
+        height: `${note.height}px`,
       }}
-        className='w-[100px] h-[100px]' />
+      />
     </div>
   )
 }
 
 const Canvas = () => {
   const { camera, setCamera, resetCamera } = useCameraStore()
-  const notes = useNoteStore(state => state.notes)
+  const { notes, newNote } = useNoteStore()
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (e.buttons !== 1) return;
@@ -157,6 +174,22 @@ const Canvas = () => {
       >
         Reset View
       </button>
+
+      <div style={{
+        position: "absolute",
+        left: 20,
+        top: 20,
+      }}
+      >
+        <button
+          // XXX: where should new coords be?
+          onClick={() => newNote(0, 0)}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="border p-3"
+        >
+          New Note
+        </button>
+      </div>
     </div >
   )
 }
