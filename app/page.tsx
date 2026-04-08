@@ -38,8 +38,8 @@ const useCameraStore = create<CameraStore>((set) => ({
   setCamera: (changes) => set(state => ({
     camera: { ...state.camera, ...changes }
   })),
-  resetCamera: () => set(state => ({
-    camera: { ...state.camera, x: 0, y: 0 }
+  resetCamera: () => set(_ => ({
+    camera: { x: 0, y: 0, zoom: 1 }
   })),
 }))
 
@@ -79,13 +79,10 @@ const NoteObj = ({ note }: { note: Note }) => {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
-      <div className="flex align-top gap-2">
-        <div style={{
-          backgroundColor: note.color,
-        }}
-          className='w-[100px] h-[100px]' />
-        <p className="text-xs text-gray-400">{`(${note.x}, ${note.y})`}</p>
-      </div>
+      <div style={{
+        backgroundColor: note.color,
+      }}
+        className='w-[100px] h-[100px]' />
     </div>
   )
 }
@@ -108,11 +105,22 @@ const Canvas = () => {
     <div className="w-screen h-screen overflow-hidden"
       style={{
         backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
-        backgroundSize: "30px 30px",
+        backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
+        backgroundPosition: `${camera.x % (30 * camera.zoom)}px ${camera.y % (30 * camera.zoom)}px`,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onWheel={(e) => {
+        const zoomFactor = e.deltaY * 0.001
+        const newZoom = camera.zoom - zoomFactor
+
+        setCamera({
+          zoom: newZoom,
+          x: e.clientX - (e.clientX - camera.x) * (newZoom / camera.zoom),
+          y: e.clientY - (e.clientY - camera.y) * (newZoom / camera.zoom),
+        })
+      }}
     >
       <div style={{
         transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
@@ -131,7 +139,7 @@ const Canvas = () => {
       }}
         className="h-[50px] bg-white border p-3 text-center"
       >
-        {`Camera X: ${camera.x}, Y: ${camera.y}, Zoom: ${camera.zoom}`}
+        {`Camera X: ${Math.round(camera.x * 100) / 100}, Y: ${Math.round(camera.y * 100) / 100}, Zoom: ${Math.round(camera.zoom * 100) / 100}`}
       </div>
 
       <button style={{
@@ -139,12 +147,12 @@ const Canvas = () => {
         right: 20,
         bottom: 20,
       }}
-        className={`border p-3 transition-opacity duration-500 ${camera.x !== 0 || camera.y !== 0 ? "opacity-100" : "opacity-0 pointer-events-none"
+        className={`border p-3 transition-opacity duration-500 ${camera.x !== 0 || camera.y !== 0 || camera.zoom !== 1 ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         onClick={resetCamera}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        Reset
+        Reset View
       </button>
     </div >
   )
