@@ -23,6 +23,7 @@ interface NoteStore {
 interface CameraStore {
   camera: Camera;
   setCamera: (changes: Partial<Camera>) => void;
+  resetCamera: () => void;
 }
 
 const useNoteStore = create<NoteStore>((set) => ({
@@ -36,7 +37,10 @@ const useCameraStore = create<CameraStore>((set) => ({
   camera: { x: 0, y: 0, zoom: 1 },
   setCamera: (changes) => set(state => ({
     camera: { ...state.camera, ...changes }
-  }))
+  })),
+  resetCamera: () => set(state => ({
+    camera: { ...state.camera, x: 0, y: 0 }
+  })),
 }))
 
 const handlePointerDown = (e: React.PointerEvent) => {
@@ -87,7 +91,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 }
 
 const Canvas = () => {
-  const { camera, setCamera } = useCameraStore()
+  const { camera, setCamera, resetCamera } = useCameraStore()
   const notes = useNoteStore(state => state.notes)
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -99,6 +103,7 @@ const Canvas = () => {
       y: camera.y + e.movementY / camera.zoom,
     })
   }
+
   return (
     <div className="w-screen h-screen overflow-hidden"
       style={{
@@ -128,6 +133,19 @@ const Canvas = () => {
       >
         {`Camera X: ${camera.x}, Y: ${camera.y}, Zoom: ${camera.zoom}`}
       </div>
+
+      <button style={{
+        position: "absolute",
+        right: 20,
+        bottom: 20,
+      }}
+        className={`border p-3 transition-opacity duration-500 ${camera.x !== 0 || camera.y !== 0 ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        onClick={resetCamera}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        Reset
+      </button>
     </div >
   )
 }
