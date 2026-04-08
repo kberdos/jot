@@ -2,6 +2,9 @@
 import { create } from "zustand"
 
 
+const ZOOM_MIN = 0.5
+const ZOOM_MAX = 3
+
 interface Camera {
   x: number;
   y: number;
@@ -113,7 +116,7 @@ const Canvas = () => {
       onPointerUp={handlePointerUp}
       onWheel={(e) => {
         const zoomFactor = e.deltaY * 0.001
-        const newZoom = camera.zoom - zoomFactor
+        const newZoom = Math.min(ZOOM_MAX, Math.max(camera.zoom - zoomFactor, ZOOM_MIN))
 
         setCamera({
           zoom: newZoom,
