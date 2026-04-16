@@ -13,8 +13,15 @@ const DEFAULT_NOTE_COLOR = "#FEFF9C"
 
 async function login() {
   await supabase.auth.signInWithOAuth({
-    provider: 'google'
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
   })
+}
+
+async function logout() {
+  await supabase.auth.signOut()
 }
 
 
@@ -137,8 +144,6 @@ const Canvas = () => {
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (e.buttons !== 1) return;
-    console.log("moving")
-    console.log(e.movementX, e.movementY)
     setCamera({
       x: camera.x + e.movementX / camera.zoom,
       y: camera.y + e.movementY / camera.zoom,
@@ -193,9 +198,14 @@ const Canvas = () => {
         onPointerDown={(e) => e.stopPropagation()}
       >
         {user ?
-          <div>
-            {`Hello, ${user.email}`}
-          </div>
+          <>
+            <div>
+              {`Hello, ${user.email}`}
+            </div>
+            <button onClick={logout}>
+              Sign Out
+            </button>
+          </>
           :
           <button onClick={login}>
             Sign In
@@ -248,6 +258,7 @@ export default function Home() {
       listener.subscription.unsubscribe()
     }
   }, [])
+
   return (
     <div>
       <Canvas />
