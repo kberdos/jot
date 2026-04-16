@@ -4,6 +4,8 @@ import { useCameraStore } from "@/util/objects/camera"
 import { useNoteStore } from "@/util/objects/note"
 import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
+import { useBoardStore } from "@/util/objects/board"
+import { useAuthStore } from "@/util/auth/auth"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -11,6 +13,8 @@ const ZOOM_MAX = 3
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, newNote } = useNoteStore()
+	const { board, createBoard } = useBoardStore()
+	const { user } = useAuthStore()
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.buttons !== 1) return;
@@ -20,8 +24,14 @@ const Canvas = () => {
 		})
 	}
 
+	const handleNewBoard = () => {
+		// XXX: allow user to specify name
+		const name = "New Board"
+		createBoard(name, user!)
+	}
+
 	return (
-		<div className="w-screen h-screen overflow-hidden"
+		<div className="w-full h-full overflow-hidden"
 			style={{
 				backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
 				backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
@@ -74,6 +84,27 @@ const Canvas = () => {
 			>
 				Reset View
 			</button>
+
+			<div className="absolute top-10 left-1/2 -translate-x-1/2 "
+				onPointerDown={(e) => e.stopPropagation()}
+			>
+				<div className="text-2xl font-normal">
+					{board ? board.name : "Untitled Board"}
+				</div>
+				{user ?
+					!board &&
+					<button
+						className="text-center"
+						onClick={handleNewBoard}
+					>
+						Save
+					</button>
+					:
+					<div>
+						Sign in to save
+					</div>
+				}
+			</div>
 
 			<div style={{
 				position: "absolute",

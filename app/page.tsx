@@ -4,6 +4,8 @@ import { useEffect } from "react"
 import Canvas from "@/components/Canvas"
 import { login, logout, useAuthStore } from "@/util/auth/auth"
 
+// TODO: make this a component and import it to the slug page as well
+
 export default function Home() {
   const { user, setUser } = useAuthStore()
   useEffect(() => {
@@ -14,13 +16,14 @@ export default function Home() {
     )
 
     return () => {
+      // teardown
       listener.subscription.unsubscribe()
     }
   }, [])
 
 
   return (
-    < div >
+    <div className="w-screen h-screen">
       <div style={{
         position: "absolute",
         right: 20,
