@@ -20,7 +20,7 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>((set) => ({
 	user: undefined,
-	setUser: (user: User | undefined) => set(state => ({
+	setUser: (user: User | undefined) => set(_ => ({
 		user: user,
 	})),
 }))

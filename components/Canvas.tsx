@@ -1,6 +1,5 @@
 "use client"
 
-import { useAuthStore, logout, login } from "@/util/auth/auth"
 import { useCameraStore } from "@/util/objects/camera"
 import { useNoteStore } from "@/util/objects/note"
 import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
@@ -12,7 +11,6 @@ const ZOOM_MAX = 3
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, newNote } = useNoteStore()
-	const { user } = useAuthStore()
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.buttons !== 1) return;
@@ -54,28 +52,6 @@ const Canvas = () => {
 				))}
 			</div>
 
-			<div style={{
-				position: "absolute",
-				right: 20,
-				top: 20,
-			}}
-				onPointerDown={(e) => e.stopPropagation()}
-			>
-				{user ?
-					<>
-						<div>
-							{`Hello, ${user.email}`}
-						</div>
-						<button onClick={logout}>
-							Sign Out
-						</button>
-					</>
-					:
-					<button onClick={login}>
-						Sign In
-					</button>
-				}
-			</div>
 			<div style={{
 				position: "absolute",
 				left: 20,
