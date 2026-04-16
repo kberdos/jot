@@ -14,9 +14,6 @@ const DEFAULT_NOTE_COLOR = "#FEFF9C"
 async function login() {
   await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    },
   })
 }
 
