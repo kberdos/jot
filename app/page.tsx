@@ -47,13 +47,13 @@ interface CameraStore {
 
 interface AuthStore {
   user: User | undefined
-  setUser(user: User): void;
+  setUser(user: User | undefined): void;
 }
 
 
 const useAuthStore = create<AuthStore>((set) => ({
   user: undefined,
-  setUser: (user: User) => set(state => ({
+  setUser: (user: User | undefined) => set(state => ({
     user: user,
   })),
 }))
@@ -239,17 +239,8 @@ export default function Home() {
   const { user, setUser } = useAuthStore()
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("EVENT:", event)
-        console.log("SESSION:", session)
-
-        if (user === undefined && session) {
-          setUser(session.user)
-        }
-        if (event === "SIGNED_IN") {
-          console.log("User:", session?.user)
-          // do whatever: store user, fetch data, etc.
-        }
+      (_event, session) => {
+        setUser(session?.user ?? undefined)
       }
     )
 
