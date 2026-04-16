@@ -1,138 +1,14 @@
 "use client"
-import { create } from "zustand"
 import { supabase } from "@/util/supabase/supabase"
 import { useEffect } from "react"
-import { User } from "@supabase/supabase-js"
+import { useNoteStore } from "@/util/objects/note"
+import { useCameraStore } from "@/util/objects/camera"
+import { login, logout, useAuthStore } from "@/util/auth/auth"
+import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
+import NoteObj from "@/components/NoteCard"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
-
-const DEFAULT_NOTE_WIDTH = 200
-const DEFAULT_NOTE_COLOR = "#FEFF9C"
-
-
-async function login() {
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-  })
-}
-
-async function logout() {
-  await supabase.auth.signOut()
-}
-
-
-interface Camera {
-  x: number;
-  y: number;
-  zoom: number;
-}
-
-interface Note {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number
-  color: string;
-}
-
-interface NoteStore {
-  notes: Note[];
-  updateNote: (id: string, changes: Partial<Note>) => void;
-  newNote: (x: number, y: number) => void;
-}
-
-interface CameraStore {
-  camera: Camera;
-  setCamera: (changes: Partial<Camera>) => void;
-  resetCamera: () => void;
-}
-
-interface AuthStore {
-  user: User | undefined
-  setUser(user: User | undefined): void;
-}
-
-
-const useAuthStore = create<AuthStore>((set) => ({
-  user: undefined,
-  setUser: (user: User | undefined) => set(state => ({
-    user: user,
-  })),
-}))
-
-const useNoteStore = create<NoteStore>((set) => ({
-  notes: [{ id: "0", x: 300, y: 300, width: DEFAULT_NOTE_WIDTH, height: DEFAULT_NOTE_WIDTH, color: DEFAULT_NOTE_COLOR }],
-  updateNote: (id, changes) => set(state => ({
-    notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
-  })),
-  newNote: (x, y) => set(state => ({
-    notes: [...state.notes, {
-      id: crypto.randomUUID(),
-      x: x,
-      y: y,
-      width: DEFAULT_NOTE_WIDTH,
-      height: DEFAULT_NOTE_WIDTH,
-      color: DEFAULT_NOTE_COLOR
-    }],
-  }))
-}))
-
-const useCameraStore = create<CameraStore>((set) => ({
-  camera: { x: 0, y: 0, zoom: 1 },
-  setCamera: (changes) => set(state => ({
-    camera: { ...state.camera, ...changes }
-  })),
-  resetCamera: () => set(_ => ({
-    // TODO: smooth gradient back to these positions
-    camera: { x: 0, y: 0, zoom: 1 }
-  })),
-}))
-
-const handlePointerDown = (e: React.PointerEvent) => {
-  e.currentTarget.setPointerCapture(e.pointerId)
-}
-const handlePointerUp = (e: React.PointerEvent) => {
-  e.currentTarget.releasePointerCapture(e.pointerId)
-}
-
-
-const NoteObj = ({ note }: { note: Note }) => {
-  const updateNote = useNoteStore(state => state.updateNote)
-  const camera = useCameraStore(state => state.camera)
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    e.stopPropagation()
-    if (e.buttons !== 1) return;
-    updateNote(note.id, {
-      x: note.x + e.movementX / camera.zoom,
-      y: note.y + e.movementY / camera.zoom,
-    })
-  }
-
-  return (
-    <div style={{
-      position: "absolute",
-      left: note.x,
-      top: note.y,
-    }}
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        handlePointerDown(e)
-      }}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-    >
-      <div style={{
-        backgroundColor: note.color,
-        width: `${note.width}px`,
-        height: `${note.height}px`,
-      }}
-      />
-    </div>
-  )
-}
 
 const Canvas = () => {
   const { camera, setCamera, resetCamera } = useCameraStore()
@@ -244,7 +120,7 @@ const Canvas = () => {
 }
 
 export default function Home() {
-  const { user, setUser } = useAuthStore()
+  const { setUser } = useAuthStore()
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
