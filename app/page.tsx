@@ -178,19 +178,11 @@ const Canvas = () => {
           <NoteObj key={note.id} note={note} />
         ))}
       </div>
+
       <div style={{
         position: "absolute",
         right: 20,
         top: 20,
-      }}
-        className="h-[50px] bg-white border p-3 text-center"
-      >
-        {`Camera X: ${Math.round(camera.x * 100) / 100}, Y: ${Math.round(camera.y * 100) / 100}, Zoom: ${Math.round(camera.zoom * 100) / 100}`}
-      </div>
-      <div style={{
-        position: "absolute",
-        right: 20,
-        top: 80,
       }}
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -208,6 +200,15 @@ const Canvas = () => {
             Sign In
           </button>
         }
+      </div>
+      <div style={{
+        position: "absolute",
+        left: 20,
+        bottom: 20,
+      }}
+        className="h-[50px] bg-white border p-3 text-center"
+      >
+        {`Camera X: ${Math.round(camera.x * 100) / 100}, Y: ${Math.round(camera.y * 100) / 100}, Zoom: ${Math.round(camera.zoom * 100) / 100}`}
       </div>
 
       <button style={{
