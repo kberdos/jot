@@ -1,12 +1,22 @@
 "use client"
 import { create } from "zustand"
-
+import { supabase } from "@/util/supabase/supabase"
+import { useEffect } from "react"
+import { User } from "@supabase/supabase-js"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
 
 const DEFAULT_NOTE_WIDTH = 200
 const DEFAULT_NOTE_COLOR = "#FEFF9C"
+
+
+async function login() {
+  await supabase.auth.signInWithOAuth({
+    provider: 'google'
+  })
+}
+
 
 interface Camera {
   x: number;
@@ -34,6 +44,19 @@ interface CameraStore {
   setCamera: (changes: Partial<Camera>) => void;
   resetCamera: () => void;
 }
+
+interface AuthStore {
+  user: User | undefined
+  setUser(user: User): void;
+}
+
+
+const useAuthStore = create<AuthStore>((set) => ({
+  user: undefined,
+  setUser: (user: User) => set(state => ({
+    user: user,
+  })),
+}))
 
 const useNoteStore = create<NoteStore>((set) => ({
   notes: [{ id: "0", x: 300, y: 300, width: DEFAULT_NOTE_WIDTH, height: DEFAULT_NOTE_WIDTH, color: DEFAULT_NOTE_COLOR }],
@@ -110,6 +133,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 const Canvas = () => {
   const { camera, setCamera, resetCamera } = useCameraStore()
   const { notes, newNote } = useNoteStore()
+  const { user } = useAuthStore()
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (e.buttons !== 1) return;
@@ -161,6 +185,23 @@ const Canvas = () => {
       >
         {`Camera X: ${Math.round(camera.x * 100) / 100}, Y: ${Math.round(camera.y * 100) / 100}, Zoom: ${Math.round(camera.zoom * 100) / 100}`}
       </div>
+      <div style={{
+        position: "absolute",
+        right: 20,
+        top: 80,
+      }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {user ?
+          <div>
+            {`Hello, ${user.email}`}
+          </div>
+          :
+          <button onClick={login}>
+            Sign In
+          </button>
+        }
+      </div>
 
       <button style={{
         position: "absolute",
@@ -195,6 +236,27 @@ const Canvas = () => {
 }
 
 export default function Home() {
+  const { user, setUser } = useAuthStore()
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("EVENT:", event)
+        console.log("SESSION:", session)
+
+        if (user === undefined && session) {
+          setUser(session.user)
+        }
+        if (event === "SIGNED_IN") {
+          console.log("User:", session?.user)
+          // do whatever: store user, fetch data, etc.
+        }
+      }
+    )
+
+    return () => {
+      listener.subscription.unsubscribe()
+    }
+  }, [])
   return (
     <div>
       <Canvas />
