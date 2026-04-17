@@ -43,6 +43,7 @@ export const useBoardStore = create<BoardStore>((set) => ({
 
 		// XXX: go to a 404 instead of throw error
 		if (error) throw error
+		// write every note to the board
 
 		return board
 	},

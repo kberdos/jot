@@ -13,7 +13,7 @@ const ZOOM_MAX = 3
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, newNote } = useNoteStore()
+	const { notes, newNote, saveNotes } = useNoteStore()
 	const { board, createBoard } = useBoardStore()
 	const { user } = useAuthStore()
 	const router = useRouter()
@@ -31,6 +31,9 @@ const Canvas = () => {
 		// XXX: allow user to specify name
 		const name = "New Board"
 		const board = await createBoard(name, user!)
+		// user HAS to be specified at this point
+		console.log("board id: ", board.id)
+		await saveNotes(board.id, user!)
 		router.push(`/boards/${board.id}`)
 	}
 
