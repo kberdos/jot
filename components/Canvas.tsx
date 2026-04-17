@@ -6,6 +6,7 @@ import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
+import { useRouter } from "next/navigation"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -15,6 +16,8 @@ const Canvas = () => {
 	const { notes, newNote } = useNoteStore()
 	const { board, createBoard } = useBoardStore()
 	const { user } = useAuthStore()
+	const router = useRouter()
+
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.buttons !== 1) return;
@@ -24,10 +27,11 @@ const Canvas = () => {
 		})
 	}
 
-	const handleNewBoard = () => {
+	const handleNewBoard = async () => {
 		// XXX: allow user to specify name
 		const name = "New Board"
-		createBoard(name, user!)
+		const board = await createBoard(name, user!)
+		router.push(`/boards/${board.id}`)
 	}
 
 	return (

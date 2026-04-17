@@ -11,7 +11,7 @@ interface Board {
 interface BoardStore {
 	board?: Board,
 	setBoard: (id: string) => void;
-	createBoard: (name: string, user: User) => void;
+	createBoard: (name: string, user: User) => Promise<Board>;
 }
 
 export const useBoardStore = create<BoardStore>((set) => ({
@@ -33,7 +33,7 @@ export const useBoardStore = create<BoardStore>((set) => ({
 	},
 	createBoard: async (name: string, user: User) => {
 		// make the board with supabasse
-		const { data, error } = await supabase
+		const { data: board, error } = await supabase
 			.from("boards")
 			.insert({
 				name, author: user.id
@@ -44,9 +44,6 @@ export const useBoardStore = create<BoardStore>((set) => ({
 		// XXX: go to a 404 instead of throw error
 		if (error) throw error
 
-		// update the state
-		set(_ => ({
-			board: data
-		}))
+		return board
 	},
 }))
