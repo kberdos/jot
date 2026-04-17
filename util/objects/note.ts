@@ -21,7 +21,7 @@ interface NoteStore {
 	notes: Note[];
 	updateNote: (id: string, changes: Partial<Note>) => Promise<void>;
 	loadNotes: (board_id: string) => Promise<void>;
-	newNote: (x: number, y: number) => void;
+	newNote: (x: number, y: number, board_id?: string, user_id?: string) => void;
 	saveNotes: (board_id: string, user: User) => Promise<void>;
 }
 
@@ -35,7 +35,7 @@ const firstNote: Note = {
 	color: DEFAULT_NOTE_COLOR,
 }
 
-async function saveNote(note: Note) {
+export async function saveNote(note: Note) {
 	if (!note.board_id) return
 	console.log("saving note to board: ", note.board_id)
 	const { error } = await supabase
@@ -60,10 +60,10 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 		set(state => ({
 			notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
 		}))
-		const note = get().notes.find((note) => note.id === id)
-		if (note === undefined || !note.board_id) return
-
-		saveNote(note)
+		// const note = get().notes.find((note) => note.id === id)
+		// if (note === undefined || !note.board_id) return
+		//
+		// saveNote(note)
 	},
 	loadNotes: async (board_id: string) => {
 		const { data, error } = await supabase
@@ -77,17 +77,22 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			notes: notes,
 		}))
 	},
-	newNote: (x, y) => set(state => ({
-		notes: [...state.notes, {
+	newNote: (x, y, board_id?: string, user_id?: string) => {
+		const n = {
 			id: crypto.randomUUID(),
 			x: x,
 			y: y,
 			width: DEFAULT_NOTE_WIDTH,
 			height: DEFAULT_NOTE_HEIGHT,
-			color: DEFAULT_NOTE_COLOR
-		}],
-		// TODO: save the note
-	})),
+			color: DEFAULT_NOTE_COLOR,
+			board_id: board_id,
+			author_id: user_id,
+		}
+		set(state => ({
+			notes: [...state.notes, n],
+		}))
+		saveNote(n)
+	},
 	saveNotes: async (board_id: string, user: User) => {
 		const { notes, updateNote } = get()
 

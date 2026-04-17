@@ -121,7 +121,7 @@ const Canvas = () => {
 			>
 				<button
 					// XXX: where should new coords be?
-					onClick={() => newNote(0, 0)}
+					onClick={() => newNote(0, 0, board?.id)}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="border p-3"
 				>

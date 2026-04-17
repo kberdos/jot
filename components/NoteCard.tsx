@@ -1,12 +1,18 @@
 "use client"
 
 import { useCameraStore } from "@/util/objects/camera"
-import { Note, useNoteStore } from "@/util/objects/note"
-import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
+import { Note, saveNote, useNoteStore } from "@/util/objects/note"
+import { handlePointerDown } from "@/util/pointerfunctions"
+
 
 const NoteObj = ({ note }: { note: Note }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
 	const camera = useCameraStore(state => state.camera)
+
+	const handlePointerUp = (e: React.PointerEvent) => {
+		e.currentTarget.releasePointerCapture(e.pointerId)
+		saveNote(note)
+	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		e.stopPropagation()
