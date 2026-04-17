@@ -1,5 +1,5 @@
 "use client"
-import Canvas from "@/components/Canvas"
+import Overlay from "@/components/Overlay"
 import { useBoardStore } from "@/util/objects/board"
 import { useParams } from "next/navigation"
 import { useEffect } from "react"
@@ -14,8 +14,6 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="w-screen h-screen">
-      <Canvas />
-    </div>
+    <Overlay />
   )
 }
