@@ -4,7 +4,7 @@ import { useCameraStore } from "@/util/objects/camera"
 import { useNoteStore } from "@/util/objects/note"
 import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
-import { useBoardStore } from "@/util/objects/board"
+import { Board, useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import { useRouter } from "next/navigation"
 
@@ -14,7 +14,7 @@ const ZOOM_MAX = 3
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, newNote, saveNotes } = useNoteStore()
-	const { board, createBoard } = useBoardStore()
+	const { board, createBoard, renameBoard } = useBoardStore()
 	const { user } = useAuthStore()
 	const router = useRouter()
 
@@ -35,6 +35,14 @@ const Canvas = () => {
 		console.log("board id: ", board.id)
 		await saveNotes(board.id, user!)
 		router.push(`/boards/${board.id}`)
+	}
+
+	const handleRenameBoard = async () => {
+		let name = prompt("Enter new name")
+		if (name) {
+			console.log(name)
+			await renameBoard(name)
+		}
 	}
 
 	return (
@@ -96,8 +104,22 @@ const Canvas = () => {
 				onPointerDown={(e) => e.stopPropagation()}
 			>
 				<div className="text-2xl font-normal">
-					{board ? board.name : "Untitled Board"}
+					{board ?
+						<>
+							<div>
+								{board.name}
+							</div>
+							<button onClick={() => handleRenameBoard()}>
+								Rename
+							</button>
+						</>
+						:
+						<div>
+							Untitled Board
+						</div>
+					}
 				</div>
+
 				{user ?
 					!board &&
 					<button

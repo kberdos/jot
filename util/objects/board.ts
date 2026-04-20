@@ -2,7 +2,7 @@ import { create } from "zustand"
 import { User } from "@supabase/supabase-js"
 import { supabase } from "@/util/supabase/supabase"
 
-interface Board {
+export interface Board {
 	id: string; /* UID for this board */
 	name: string; /* name of the board */
 	author_id: string /* OAuth user ID of board author / owner */
@@ -10,11 +10,12 @@ interface Board {
 
 interface BoardStore {
 	board?: Board,
-	setBoard: (id: string) => void;
+	setBoard: (id: string) => void; // gather from database
+	renameBoard: (name: string) => Promise<void>;
 	createBoard: (name: string, user: User) => Promise<Board>;
 }
 
-export const useBoardStore = create<BoardStore>((set) => ({
+export const useBoardStore = create<BoardStore>((set, get) => ({
 	board: undefined,
 	setBoard: async (id) => {
 		// query board from supabase
@@ -30,6 +31,25 @@ export const useBoardStore = create<BoardStore>((set) => ({
 		set(_ => ({
 			board: data,
 		}))
+	},
+	// TODO: prob just a rename board and sync with database
+	renameBoard: async (name: string) => {
+		const { board } = get()
+		if (!board) return
+		set(_ => ({
+			board: {
+				...board,
+				name: name,
+			},
+		}))
+		const { data, error } = await supabase
+			.from("boards")
+			.upsert({
+				id: board.id,
+				name: name,
+			}, { onConflict: 'id' })
+
+		if (error) throw error
 	},
 	createBoard: async (name: string, user: User) => {
 		// make the board with supabasse
