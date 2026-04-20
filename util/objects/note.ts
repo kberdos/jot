@@ -3,6 +3,7 @@ import { supabase } from "@/util/supabase/supabase"
 import { User } from "@supabase/supabase-js";
 
 const DEFAULT_NOTE_WIDTH = 200
+// XXX: heights change dynamically based on text - can just use css styling 
 const DEFAULT_NOTE_HEIGHT = 200
 const DEFAULT_NOTE_COLOR = "#FEFF9C"
 
@@ -13,27 +14,29 @@ export interface Note {
 	width: number;
 	height: number
 	color: string;
-	board_id?: string; // OPTIONAL, if we're editing on sandbox
-	author_id?: string; // OPTIONAL, if we're editing on sandbox
+	board_id: string; // OPTIONAL, if we're editing on sandbox
+	author_id: string; // OPTIONAL, if we're editing on sandbox
 }
 
 interface NoteStore {
 	notes: Note[];
 	updateNote: (id: string, changes: Partial<Note>) => Promise<void>;
 	loadNotes: (board_id: string) => Promise<void>;
-	newNote: (x: number, y: number, board_id?: string, user_id?: string) => void;
+	newNote: (x: number, y: number, board_id: string, user_id: string) => void;
 	saveNotes: (board_id: string, user: User) => Promise<void>;
 }
 
 
-const firstNote: Note = {
-	id: crypto.randomUUID(),
-	x: 300,
-	y: 300,
-	width: DEFAULT_NOTE_WIDTH,
-	height: DEFAULT_NOTE_HEIGHT,
-	color: DEFAULT_NOTE_COLOR,
-}
+// XXX: going to remove later 
+
+// const firstNote: Note = {
+// 	id: crypto.randomUUID(),
+// 	x: 300,
+// 	y: 300,
+// 	width: DEFAULT_NOTE_WIDTH,
+// 	height: DEFAULT_NOTE_HEIGHT,
+// 	color: DEFAULT_NOTE_COLOR,
+// }
 
 export async function saveNote(note: Note) {
 	if (!note.board_id) return
@@ -54,7 +57,7 @@ export async function saveNote(note: Note) {
 }
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
-	notes: [firstNote],
+	notes: [],
 	updateNote: async (id, changes) => {
 		// XXX: there's something wonky about mapping then finding
 		set(state => ({
@@ -77,7 +80,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			notes: notes,
 		}))
 	},
-	newNote: (x, y, board_id?: string, user_id?: string) => {
+	newNote: (x, y, board_id: string, user_id: string) => {
 		const n = {
 			id: crypto.randomUUID(),
 			x: x,
@@ -93,6 +96,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 		}))
 		saveNote(n)
 	},
+	// XXX: since removing sandbox, can get rid of this
 	saveNotes: async (board_id: string, user: User) => {
 		const { notes, updateNote } = get()
 

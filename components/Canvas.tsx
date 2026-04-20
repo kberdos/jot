@@ -4,19 +4,17 @@ import { useCameraStore } from "@/util/objects/camera"
 import { useNoteStore } from "@/util/objects/note"
 import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
-import { Board, useBoardStore } from "@/util/objects/board"
+import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
-import { useRouter } from "next/navigation"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, newNote, saveNotes } = useNoteStore()
-	const { board, createBoard, renameBoard } = useBoardStore()
+	const { notes, newNote } = useNoteStore()
+	const { board, renameBoard } = useBoardStore()
 	const { user } = useAuthStore()
-	const router = useRouter()
 
 
 	const handlePointerMove = (e: React.PointerEvent) => {
@@ -27,15 +25,6 @@ const Canvas = () => {
 		})
 	}
 
-	const handleNewBoard = async () => {
-		// XXX: allow user to specify name
-		const name = "New Board"
-		const board = await createBoard(name, user!)
-		// user HAS to be specified at this point
-		console.log("board id: ", board.id)
-		await saveNotes(board.id, user!)
-		router.push(`/boards/${board.id}`)
-	}
 
 	const handleRenameBoard = async () => {
 		let name = prompt("Enter new name")
@@ -104,7 +93,7 @@ const Canvas = () => {
 				onPointerDown={(e) => e.stopPropagation()}
 			>
 				<div className="text-2xl font-normal">
-					{board ?
+					{board &&
 						<>
 							<div>
 								{board.name}
@@ -113,43 +102,27 @@ const Canvas = () => {
 								Rename
 							</button>
 						</>
-						:
-						<div>
-							Untitled Board
-						</div>
 					}
 				</div>
-
-				{user ?
-					!board &&
-					<button
-						className="text-center"
-						onClick={handleNewBoard}
-					>
-						Save
-					</button>
-					:
-					<div>
-						Sign in to save
-					</div>
-				}
 			</div>
 
-			<div style={{
-				position: "absolute",
-				left: 20,
-				top: 20,
-			}}
-			>
-				<button
-					// XXX: where should new coords be?
-					onClick={() => newNote(0, 0, board?.id)}
-					onPointerDown={(e) => e.stopPropagation()}
-					className="border p-3"
+			{(board && user) &&
+				<div style={{
+					position: "absolute",
+					left: 20,
+					top: 20,
+				}}
 				>
-					New Note
-				</button>
-			</div>
+					<button
+						// XXX: change coords of new note to not be 0, 0 
+						onClick={() => newNote(0, 0, board.id, user.id)}
+						onPointerDown={(e) => e.stopPropagation()}
+						className="border p-3"
+					>
+						New Note
+					</button>
+				</div>
+			}
 		</div >
 	)
 }

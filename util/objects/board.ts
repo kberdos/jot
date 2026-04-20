@@ -9,7 +9,7 @@ export interface Board {
 }
 
 interface BoardStore {
-	board?: Board,
+	board?: Board, // undefined while we're hydrating the page
 	setBoard: (id: string) => void; // gather from database
 	renameBoard: (name: string) => Promise<void>;
 	createBoard: (name: string, user: User) => Promise<Board>;
@@ -42,12 +42,13 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 				name: name,
 			},
 		}))
-		const { data, error } = await supabase
-			.from("boards")
-			.upsert({
-				id: board.id,
+		const { error } = await supabase
+			.from('boards')
+			// XXX: should be update 
+			.update({
 				name: name,
-			}, { onConflict: 'id' })
+			})
+			.eq('id', board.id)
 
 		if (error) throw error
 	},

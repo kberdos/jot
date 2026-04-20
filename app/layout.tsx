@@ -4,6 +4,7 @@ import "./globals.css";
 import { useEffect } from "react";
 import { supabase } from "@/util/supabase/supabase";
 import { useAuthStore } from "@/util/auth/auth";
+import { useRouter } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,11 +27,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  const { user, setUser } = useAuthStore()
+  const { setUser } = useAuthStore()
+  const router = useRouter()
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? undefined)
+        if (session && session.user) {
+          setUser(session.user)
+        } else {
+          setUser(undefined)
+          router.push("/")
+        }
       }
     )
 
