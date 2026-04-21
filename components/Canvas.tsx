@@ -6,9 +6,11 @@ import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
+import ArrowComponent from "./Arrow"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
+
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
@@ -64,6 +66,18 @@ const Canvas = () => {
 				{notes.map(note => (
 					<NoteObj key={note.id} note={note} />
 				))}
+				{
+					notes.length >= 2 &&
+					<ArrowComponent arrow={{
+						id: "",
+						board_id: "",
+						author_id: "",
+						start_note_id: notes[0].id,
+						start_note_side: "RIGHT",
+						end_note_id: notes[1].id,
+						end_note_side: "LEFT",
+					}} />
+				}
 			</div>
 
 			<div style={{

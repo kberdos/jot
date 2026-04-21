@@ -1,7 +1,6 @@
+import { NoteSide } from "./note";
 
-type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
-
-interface Arrow {
+export interface Arrow {
 	id: string;
 	board_id: string;
 	author_id: string;
@@ -10,4 +9,10 @@ interface Arrow {
 	end_note_id: string;
 	end_note_side: NoteSide;
 	// add: some styling stuff
+}
+
+
+interface ArrowStore {
+	arrows: Arrow[],
+	getArrow: (id: string) => Arrow | undefined;
 }

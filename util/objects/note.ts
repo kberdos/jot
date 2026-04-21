@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { supabase } from "@/util/supabase/supabase"
-import { User } from "@supabase/supabase-js";
+import { Coordinate } from "@/components/Arrow"
 
 const DEFAULT_NOTE_WIDTH = 200
 // XXX: heights change dynamically based on text - can just use css styling 
@@ -17,9 +17,36 @@ export interface Note {
 	board_id: string; // OPTIONAL, if we're editing on sandbox
 	author_id: string; // OPTIONAL, if we're editing on sandbox
 }
+export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
+
+export function getNoteCoords(note: Note, side: NoteSide): Coordinate {
+	switch (side) {
+		case "TOP":
+			return {
+				x: note.x + note.width / 2,
+				y: note.y,
+			}
+		case "RIGHT":
+			return {
+				x: note.x + note.width,
+				y: note.y + note.height / 2,
+			}
+		case "BOTTOM":
+			return {
+				x: note.x + note.width / 2,
+				y: note.y + note.height,
+			}
+		case "LEFT":
+			return {
+				x: note.x,
+				y: note.y + note.height / 2,
+			}
+	}
+}
 
 interface NoteStore {
 	notes: Note[];
+	// TODO: get note 
 	updateNote: (id: string, changes: Partial<Note>) => Promise<void>;
 	loadNotes: (board_id: string) => Promise<void>;
 	newNote: (x: number, y: number, board_id: string, user_id: string) => void;
