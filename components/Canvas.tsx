@@ -6,7 +6,7 @@ import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
-import { ArrowComponent, GhostArrowComponent } from "./Arrow"
+import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
 
 const ZOOM_MIN = 0.5
@@ -69,12 +69,7 @@ const Canvas = () => {
 				{notes.map(note => (
 					<NoteObj key={note.id} note={note} />
 				))}
-				{arrows.map(arrow => (
-					<ArrowComponent key={arrow.id} arrow={arrow} />
-				))}
-				{ghost &&
-					<GhostArrowComponent ghost={ghost} />
-				}
+				<ArrowLayer />
 
 			</div>
 

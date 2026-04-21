@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { NoteSide } from "./note";
+import { supabase } from "../supabase/supabase";
 
 // drawn arrow
 export interface Arrow {
@@ -24,19 +25,49 @@ export type AddMode = "NONE" | "ACTIVE" | "ADDING"
 
 interface ArrowStore {
 	arrows: Arrow[];
-	addArrow: (arrow: Arrow) => void;
+	newArrow: (arrow: Arrow) => void;
+	loadArrows: (board_id: string) => Promise<void>;
 	ghost?: GhostArrow;
 	setGhost: (ghost?: GhostArrow) => void;
 	addMode: AddMode;
 	setAddMode: (val: AddMode) => void;
 }
 
+export async function saveArrow(arrow: Arrow) {
+	// XXX: maybe can split this up into doing less 
+	const { error } = await supabase
+		.from("arrows")
+		.upsert({
+			id: arrow.id,
+			board_id: arrow.board_id,
+			author_id: arrow.author_id,
+			start_note_id: arrow.start_note_id,
+			start_note_side: arrow.start_note_side,
+			end_note_id: arrow.end_note_id,
+			end_note_side: arrow.end_note_side,
+		}, { onConflict: 'id' })
+	if (error) throw error
+}
+
 export const useArrowStore = create<ArrowStore>((set, get) => ({
 	arrows: [],
-	addArrow: (arrow: Arrow) => {
-		console.log(arrow)
+	newArrow: (arrow: Arrow) => {
+		arrow.id = crypto.randomUUID()
 		set(state => ({
 			arrows: [...state.arrows, arrow],
+		}))
+		saveArrow(arrow)
+	},
+	loadArrows: async (board_id: string) => {
+		const { data, error } = await supabase
+			.from("arrows").
+			select("*")
+			.eq('board_id', board_id)
+
+		if (error) throw error
+		const arrows = data as Arrow[]
+		set(_ => ({
+			arrows: arrows,
 		}))
 	},
 	ghost: undefined,
