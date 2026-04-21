@@ -1,8 +1,9 @@
 "use client"
 import { getArrow } from "perfect-arrows"
-import { Arrow } from "@/util/objects/arrow"
+import { Arrow, GhostArrow } from "@/util/objects/arrow"
 import { useEffect, useState } from "react";
-import { getNoteCoords, useNoteStore } from "@/util/objects/note";
+import { useNoteStore } from "@/util/objects/note";
+import { getNoteCoords } from "@/util/noteCoordinates";
 
 
 export interface Coordinate {
@@ -11,28 +12,9 @@ export interface Coordinate {
 }
 
 
-
-interface ArrowProps {
-	arrow: Arrow
-}
-
-export default function ArrowComponent(props: ArrowProps) {
-	const startNote = useNoteStore(state => state.notes.find(n => n.id === props.arrow.start_note_id))
-	const endNote = useNoteStore(state => state.notes.find(n => n.id === props.arrow.end_note_id))
-
-	const [start, setStart] = useState<Coordinate>(getNoteCoords(startNote!, props.arrow.start_note_side))
-	const [end, setEnd] = useState<Coordinate>(getNoteCoords(endNote!, props.arrow.end_note_side))
-
-	useEffect(() => {
-		setStart(getNoteCoords(startNote!, props.arrow.start_note_side))
-	}, [startNote])
-	useEffect(() => {
-		setEnd(getNoteCoords(endNote!, props.arrow.end_note_side))
-	}, [endNote])
-
+const ArrowSVG = (props: { start: Coordinate, end: Coordinate }) => {
 	const padding = 20
-
-	const arrowArr = getArrow(start.x, start.y, end.x, end.y, {
+	const arrowArr = getArrow(props.start.x, props.start.y, props.end.x, props.end.y, {
 		stretch: 0,
 		padEnd: padding,
 	})
@@ -55,7 +37,7 @@ export default function ArrowComponent(props: ArrowProps) {
 				width,
 				height,
 				pointerEvents: "none",
-				overflow: "visible", // fallback in case something clips
+				overflow: "visible", // fallback if something clips
 			}}
 			stroke="#000"
 			fill="#000"
@@ -67,5 +49,53 @@ export default function ArrowComponent(props: ArrowProps) {
 				transform={`translate(${ex},${ey}) rotate(${endAngleAsDegrees})`}
 			/>
 		</svg>
+	)
+}
+
+
+export function ArrowComponent(props: { arrow: Arrow }) {
+	const startNote = useNoteStore(state => state.notes.find(n => n.id === props.arrow.start_note_id))
+	const endNote = useNoteStore(state => state.notes.find(n => n.id === props.arrow.end_note_id))
+
+	const [start, setStart] = useState<Coordinate>(getNoteCoords(startNote!, props.arrow.start_note_side))
+	const [end, setEnd] = useState<Coordinate>(getNoteCoords(endNote!, props.arrow.end_note_side))
+
+	useEffect(() => {
+		setStart(getNoteCoords(startNote!, props.arrow.start_note_side))
+	}, [startNote])
+	useEffect(() => {
+		setEnd(getNoteCoords(endNote!, props.arrow.end_note_side))
+	}, [endNote])
+
+	return (
+		<>
+			<ArrowSVG start={start} end={end} />
+		</>
+	)
+}
+
+
+export function GhostArrowComponent(props: { ghost: GhostArrow }) {
+	const startNote = useNoteStore(state => state.notes.find(n => n.id === props.ghost.start_note_id))
+
+	const [start, setStart] = useState<Coordinate>(getNoteCoords(startNote!, props.ghost.start_note_side))
+	const [end, setEnd] = useState<Coordinate>({ x: start.x, y: start.y })
+
+	useEffect(() => {
+		setStart(getNoteCoords(startNote!, props.ghost.start_note_side))
+	}, [startNote])
+
+	useEffect(() => {
+		const handleMouseMove = (e: MouseEvent) => {
+			setEnd({ x: e.clientX, y: e.clientY })
+		}
+		window.addEventListener('mousemove', handleMouseMove)
+		return () => window.removeEventListener('mousemove', handleMouseMove)
+	}, [])
+
+	return (
+		<>
+			<ArrowSVG start={start} end={end} />
+		</>
 	)
 }

@@ -1,13 +1,68 @@
 "use client"
 
+import { useAuthStore } from "@/util/auth/auth"
+import { getNodeOffsets } from "@/util/noteCoordinates"
+import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
+import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
-import { Note, saveNote, useNoteStore } from "@/util/objects/note"
+import { Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
 import { handlePointerDown } from "@/util/pointerfunctions"
 
 
 const NoteObj = ({ note }: { note: Note }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
 	const camera = useCameraStore(state => state.camera)
+
+	const { board } = useBoardStore()
+	const { user } = useAuthStore()
+	const { addArrow, addMode, setAddMode, setGhost, ghost } = useArrowStore()
+
+	const handleGhostArrow = (noteSide: NoteSide) => {
+		console.log("hi")
+		if (addMode === "ACTIVE") {
+			const newGhost: GhostArrow = {
+				start_note_id: note.id,
+				start_note_side: noteSide,
+			}
+			setGhost(newGhost)
+			setAddMode("ADDING")
+		} else {
+			const arrow: Arrow = {
+				id: "",
+				board_id: board!.id,
+				author_id: user!.id,
+				start_note_id: ghost!.start_note_id,
+				start_note_side: ghost!.start_note_side,
+				end_note_id: note.id,
+				end_note_side: noteSide,
+			}
+			setGhost(undefined)
+			setAddMode("NONE")
+			addArrow(arrow)
+		}
+	}
+
+	const ArrowTrigger = (props: { noteSide: NoteSide }) => {
+		const { x, y } = getNodeOffsets(note, props.noteSide)
+
+		return (
+			<button
+				style={{
+					position: "absolute",
+					left: x - 9,
+					top: y - 9
+				}}
+				className="z-50 rounded-full bg-red-500 w-5 h-5"
+				onPointerDown={(e) => e.stopPropagation()}
+				onPointerUp={(e) => e.stopPropagation()}
+				onClick={(e) => {
+					e.stopPropagation()
+					handleGhostArrow(props.noteSide)
+				}}
+			/>
+		)
+	}
+
 
 	const handlePointerUp = (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
@@ -41,7 +96,16 @@ const NoteObj = ({ note }: { note: Note }) => {
 				width: `${note.width}px`,
 				height: `${note.height}px`,
 			}}
-			/>
+			>
+				{addMode !== "NONE" &&
+					<div className="relative">
+						<ArrowTrigger noteSide="TOP" />
+						<ArrowTrigger noteSide="RIGHT" />
+						<ArrowTrigger noteSide="LEFT" />
+						<ArrowTrigger noteSide="BOTTOM" />
+					</div>
+				}
+			</div>
 		</div>
 	)
 }

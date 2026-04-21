@@ -19,3 +19,8 @@
 - name annotation
 - dont resize but just make it longer when the text overflows
 - use sendbeacon to save the camera when you exit the board. A concern is with collaboration
+
+- z index for arrows
+
+
+

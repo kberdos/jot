@@ -6,7 +6,8 @@ import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
-import ArrowComponent from "./Arrow"
+import { ArrowComponent, GhostArrowComponent } from "./Arrow"
+import { useArrowStore } from "@/util/objects/arrow"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -16,6 +17,8 @@ const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, newNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
+	const { arrows, setAddMode, ghost } = useArrowStore()
+
 	const { user } = useAuthStore()
 
 
@@ -66,18 +69,13 @@ const Canvas = () => {
 				{notes.map(note => (
 					<NoteObj key={note.id} note={note} />
 				))}
-				{
-					notes.length >= 2 &&
-					<ArrowComponent arrow={{
-						id: "",
-						board_id: "",
-						author_id: "",
-						start_note_id: notes[0].id,
-						start_note_side: "RIGHT",
-						end_note_id: notes[1].id,
-						end_note_side: "LEFT",
-					}} />
+				{arrows.map(arrow => (
+					<ArrowComponent key={arrow.id} arrow={arrow} />
+				))}
+				{ghost &&
+					<GhostArrowComponent ghost={ghost} />
 				}
+
 			</div>
 
 			<div style={{
@@ -120,23 +118,26 @@ const Canvas = () => {
 				</div>
 			</div>
 
-			{(board && user) &&
-				<div style={{
-					position: "absolute",
-					left: 20,
-					top: 20,
-				}}
+			<div
+				className="absolute left-10 top-10 flex flex-col gap-2 "
+			>
+				<button
+					// XXX: change coords of new note to not be 0, 0 
+					onClick={() => newNote(0, 0, board!.id, user!.id)}
+					onPointerDown={(e) => e.stopPropagation()}
+					className="border p-3"
 				>
-					<button
-						// XXX: change coords of new note to not be 0, 0 
-						onClick={() => newNote(0, 0, board.id, user.id)}
-						onPointerDown={(e) => e.stopPropagation()}
-						className="border p-3"
-					>
-						New Note
-					</button>
-				</div>
-			}
+					New Note
+				</button>
+				<button
+					// XXX: change coords of new note to not be 0, 0 
+					onClick={() => setAddMode("ACTIVE")}
+					onPointerDown={(e) => e.stopPropagation()}
+					className="border p-3"
+				>
+					Draw Arrow
+				</button>
+			</div>
 		</div >
 	)
 }
