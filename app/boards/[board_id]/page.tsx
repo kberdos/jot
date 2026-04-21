@@ -13,10 +13,16 @@ export default function Home() {
   const { loadNotes } = useNoteStore()
   const { loadArrows } = useArrowStore()
 
+
+  // need to wait to load arrows after loading notes
+  const loadObjects = async () => {
+    await loadNotes(board_id)
+    await loadArrows(board_id)
+  }
+
   useEffect(() => {
     setBoard(board_id)
-    loadNotes(board_id)
-    loadArrows(board_id)
+    loadObjects()
   }, [])
 
   return (
