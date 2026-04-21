@@ -5,7 +5,7 @@ import { Coordinate } from "@/components/Arrow"
 const DEFAULT_NOTE_WIDTH = 200
 // XXX: heights change dynamically based on text - can just use css styling 
 const DEFAULT_NOTE_HEIGHT = 200
-const DEFAULT_NOTE_COLOR = "#FEFF9C"
+const DEFAULT_NOTE_COLOR = "#FFF4BF"
 
 export interface Note {
 	id: string;
