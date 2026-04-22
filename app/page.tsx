@@ -63,7 +63,7 @@ export default function Home() {
 
           {/* Tagline */}
           <p
-            className="text-gray-600 italic text-xl"
+            className="text-black italic text-xl"
             style={{ fontFamily: "EB Garamond, serif" }}
           >
             ~ you ought to jot it down ~
