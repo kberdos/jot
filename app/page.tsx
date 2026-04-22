@@ -30,14 +30,12 @@ export default function Home() {
           <div className="flex flex-col gap-4 items-center">
             <button
               onClick={viewBoards}
-              className="px-6 py-2 rounded-lg bg-[#8FD2FF] hover:bg-[#4BA7EF] transition"
             >
               Your Boards
             </button>
 
             <button
               onClick={handleNewBoard}
-              className="px-6 py-2 rounded-lg bg-[#8FD2FF] hover:bg-[#4BA7EF] transition"
             >
               New Board
             </button>
