@@ -8,6 +8,7 @@ import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
+import CollabLayer from "./Collab"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -70,6 +71,7 @@ const Canvas = () => {
 					<NoteObj key={note.id} note={note} />
 				))}
 				<ArrowLayer />
+				<CollabLayer />
 
 			</div>
 

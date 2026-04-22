@@ -1,6 +1,5 @@
 import { create } from "zustand"
 import { supabase } from "@/util/supabase/supabase"
-import { Coordinate } from "@/components/Arrow"
 
 const DEFAULT_NOTE_WIDTH = 200
 // XXX: heights change dynamically based on text - can just use css styling 
