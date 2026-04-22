@@ -19,7 +19,7 @@ export default function Home() {
   const { loadArrows } = useArrowStore()
   const { user } = useAuthStore()
   const { camera } = useCameraStore()
-  const { newCursor, moveCursor } = useCollabStore()
+  const { upsertCursor } = useCollabStore()
 
   const cameraRef = useRef(camera)
   useEffect(() => { cameraRef.current = camera }, [camera])
@@ -32,16 +32,18 @@ export default function Home() {
   const sendCursor = useMemo(() => throttle((x: number, y: number) => {
     if (!userRef.current || !channelRef.current) return
     const cam = cameraRef.current
+    console.log("send")
     channelRef.current.send({
       type: 'broadcast',
       event: 'cursor',
       payload: {
         user_id: userRef.current.id,
+        user_email: userRef.current.email,
         x: (x - cam.x) / cam.zoom,
         y: (y - cam.y) / cam.zoom,
       }
     })
-  }, 100), [])
+  }, 200), [])
 
   useEffect(() => {
     const channel = supabase.channel(`board-${board_id}`, {
@@ -50,29 +52,18 @@ export default function Home() {
     channelRef.current = channel
 
     channel
-      .on('broadcast', { event: 'board-hello' }, ({ payload }) => {
-        console.log("hello")
-        const cursor: CollabCursor = {
-          user_id: payload.user_id,
-          color: "#00FF00",
-          x: 0,
-          y: 0,
-        }
-        newCursor(cursor)
-      })
       .on('broadcast', { event: 'cursor' }, ({ payload }) => {
         console.log("move")
-        moveCursor(payload.user_id, payload.x, payload.y)
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED' && userRef.current) {
-          channel.send({
-            type: 'broadcast',
-            event: 'board-hello',
-            payload: { user_id: userRef.current.id }
-          })
+        const cursor: CollabCursor = {
+          user_id: payload.user_id,
+          user_email: payload.user_email,
+          color: "#00FF00",
+          x: payload.x,
+          y: payload.y,
         }
+        upsertCursor(cursor)
       })
+      .subscribe()
 
     setBoard(board_id)
     loadNotes(board_id).then(() => loadArrows(board_id))

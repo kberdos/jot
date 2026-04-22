@@ -13,8 +13,8 @@ export interface Note {
 	width: number;
 	height: number
 	color: string;
-	board_id: string; // OPTIONAL, if we're editing on sandbox
-	author_id: string; // OPTIONAL, if we're editing on sandbox
+	board_id: string;
+	author_id: string;
 }
 export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 

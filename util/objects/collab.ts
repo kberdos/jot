@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 export interface CollabCursor {
 	user_id: string;
+	user_email: string;
 	color: string;
 	x: number;
 	y: number;
@@ -10,22 +11,23 @@ export interface CollabCursor {
 
 interface CollabStore {
 	cursors: CollabCursor[];
-	newCursor: (cursor: CollabCursor) => void;
-	moveCursor: (id: string, x: number, y: number) => void;
+	upsertCursor: (cursor: CollabCursor) => void;
 }
 
 export const useCollabStore = create<CollabStore>((set, get) => ({
 	cursors: [],
-	newCursor: (cursor: CollabCursor) => {
-		set(state => ({
-			cursors: [...state.cursors, cursor]
-		}))
-	},
-	moveCursor: (id: string, x: number, y: number) => {
-		set(state => ({
-			cursors: state.cursors.map(c => c.user_id === id ?
-				{ ...c, x, y } : c),
-		}))
+	upsertCursor: (cursor: CollabCursor) => {
+		const { cursors } = get()
+		if (!cursors.find((c) => c.user_id === cursor.user_id)) {
+			set(_ => ({
+				cursors: [...cursors, cursor]
+			}))
+		} else {
+			set(state => ({
+				cursors: state.cursors.map(c => c.user_id === cursor.user_id ?
+					cursor : c),
+			}))
+		}
 	}
 }))
 
