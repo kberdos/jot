@@ -12,7 +12,11 @@ export default function Home() {
   const viewBoards = () => router.push("/boards")
 
   const handleNewBoard = async () => {
-    const board = await createBoard("New Board", user!)
+    const name = "New Board"
+    const board = await createBoard(name, user!)
+    // user HAS to be specified at this point
+    console.log("board id: ", board.id)
+    // await saveNotes(board.id, user!)
     router.push(`/boards/${board.id}`)
   }
 
