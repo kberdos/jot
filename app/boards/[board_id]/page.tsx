@@ -42,7 +42,8 @@ export default function Home() {
         y: (y - cam.y) / cam.zoom,
       }
     })
-  }, 100), [])
+    // XXX: this has to be throttled or else realtime usage will spike hard
+  }, 500), [])
 
   useEffect(() => {
     const channel = supabase.channel(`board-${board_id}`, {

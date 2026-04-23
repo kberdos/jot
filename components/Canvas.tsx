@@ -18,7 +18,7 @@ const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, createNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
-	const { arrows, setAddMode, ghost } = useArrowStore()
+	const { setAddMode } = useArrowStore()
 
 	const { user } = useAuthStore()
 
@@ -87,7 +87,7 @@ const Canvas = () => {
 
 			<button style={{
 				position: "absolute",
-				right: 20,
+				left: 400,
 				bottom: 20,
 			}}
 				className={`border p-3 transition-opacity duration-500 ${camera.x !== 0 || camera.y !== 0 || camera.zoom !== 1 ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -116,7 +116,7 @@ const Canvas = () => {
 			</div>
 
 			<div
-				className="absolute left-10 top-10 flex flex-col gap-2 "
+				className="absolute left-10 top-30 flex flex-col gap-2 "
 			>
 				<button
 					// XXX: change coords of new note to not be 0, 0 
