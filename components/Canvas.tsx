@@ -1,7 +1,7 @@
 "use client"
 
 import { useCameraStore } from "@/util/objects/camera"
-import { useNoteStore } from "@/util/objects/note"
+import { saveNote, useNoteStore } from "@/util/objects/note"
 import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
@@ -16,7 +16,7 @@ const ZOOM_MAX = 3
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, newNote } = useNoteStore()
+	const { notes, createNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
 	const { arrows, setAddMode, ghost } = useArrowStore()
 
@@ -120,7 +120,10 @@ const Canvas = () => {
 			>
 				<button
 					// XXX: change coords of new note to not be 0, 0 
-					onClick={() => newNote(0, 0, board!.id, user!.id)}
+					onClick={() => {
+						const n = createNote(0, 0, board!.id, user!.id)
+						saveNote(n)
+					}}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="border p-3"
 				>

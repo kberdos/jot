@@ -22,9 +22,10 @@ export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 interface NoteStore {
 	notes: Note[];
 	// TODO: get note 
-	updateNote: (id: string, changes: Partial<Note>) => Promise<void>;
+	updateNote: (id: string, changes: Partial<Note>) => void;
 	loadNotes: (board_id: string) => Promise<void>;
-	newNote: (x: number, y: number, board_id: string, user_id: string) => void;
+	createNote: (x: number, y: number, board_id: string, user_id: string) => Note;
+	addNote: (note: Note) => void;
 }
 
 
@@ -48,7 +49,7 @@ export async function saveNote(note: Note) {
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
 	notes: [],
-	updateNote: async (id, changes) => {
+	updateNote: (id, changes) => {
 		set(state => ({
 			notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
 		}))
@@ -65,8 +66,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			notes: notes,
 		}))
 	},
-	newNote: (x, y, board_id: string, user_id: string) => {
-		const n = {
+	createNote: (x, y, board_id: string, user_id: string) => {
+		const note = {
 			id: crypto.randomUUID(),
 			x: x,
 			y: y,
@@ -77,8 +78,14 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			author_id: user_id,
 		}
 		set(state => ({
-			notes: [...state.notes, n],
+			notes: [...state.notes, note],
 		}))
-		saveNote(n)
+		return note;
 	},
+	// NOTE: this is used for adding notes pulled from database
+	addNote: (note: Note) => {
+		set(state => ({
+			notes: [...state.notes, note],
+		}))
+	}
 }))

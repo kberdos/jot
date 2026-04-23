@@ -25,7 +25,9 @@ export type AddMode = "NONE" | "ACTIVE" | "ADDING"
 
 interface ArrowStore {
 	arrows: Arrow[];
-	newArrow: (arrow: Arrow) => void;
+	createArrow: (arrow: Arrow) => void;
+	addArrow: (arrow: Arrow) => void
+	updateArrow: (id: string, changes: Partial<Arrow>) => void
 	loadArrows: (board_id: string) => Promise<void>;
 	ghost?: GhostArrow;
 	setGhost: (ghost?: GhostArrow) => void;
@@ -51,7 +53,17 @@ export async function saveArrow(arrow: Arrow) {
 
 export const useArrowStore = create<ArrowStore>((set, get) => ({
 	arrows: [],
-	newArrow: (arrow: Arrow) => {
+	updateArrow: (id, changes) => {
+		set(state => ({
+			arrows: state.arrows.map(a => a.id === id ? { ...a, ...changes } : a)
+		}))
+	},
+	addArrow: (arrow: Arrow) => {
+		set(state => ({
+			arrows: [...state.arrows, arrow],
+		}))
+	},
+	createArrow: (arrow: Arrow) => {
 		arrow.id = crypto.randomUUID()
 		set(state => ({
 			arrows: [...state.arrows, arrow],

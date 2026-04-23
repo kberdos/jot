@@ -1,7 +1,7 @@
 "use client"
 import Overlay from "@/components/Overlay"
 import { useAuthStore } from "@/util/auth/auth"
-import { useArrowStore } from "@/util/objects/arrow"
+import { Arrow, useArrowStore } from "@/util/objects/arrow"
 import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
 import { CollabCursor, useCollabStore } from "@/util/objects/collab"
@@ -15,8 +15,8 @@ export default function Home() {
   const params = useParams()
   const board_id = String(params.board_id)
   const { setBoard } = useBoardStore()
-  const { loadNotes, updateNote } = useNoteStore()
-  const { loadArrows } = useArrowStore()
+  const { addNote, loadNotes, updateNote } = useNoteStore()
+  const { loadArrows, addArrow, updateArrow } = useArrowStore()
   const { user } = useAuthStore()
   const { camera } = useCameraStore()
   const { upsertCursor } = useCollabStore()
@@ -32,7 +32,6 @@ export default function Home() {
   const sendCursor = useMemo(() => throttle((x: number, y: number) => {
     if (!userRef.current || !channelRef.current) return
     const cam = cameraRef.current
-    console.log("send")
     channelRef.current.send({
       type: 'broadcast',
       event: 'cursor',
@@ -53,11 +52,10 @@ export default function Home() {
 
     channel
       .on('broadcast', { event: 'cursor' }, ({ payload }) => {
-        console.log("move")
-        const cursor: CollabCursor = {
+        if (payload.user_id === userRef.current?.id) return
+        const cursor: Partial<CollabCursor> = {
           user_id: payload.user_id,
           user_email: payload.user_email,
-          color: "#00FF00",
           x: payload.x,
           y: payload.y,
         }
@@ -65,10 +63,26 @@ export default function Home() {
       })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'notes', filter: `board_id=eq.${board_id}` },
-        ({ eventType, new: newRow, old: oldRow }) => {
-          console.log("change?")
-          // if (eventType === 'INSERT') addNote(newRow)
-          if (eventType === 'UPDATE') updateNote(newRow["id"], newRow as Note)
+        ({ eventType, new: newRow }) => {
+          const note = newRow as Note
+          if (eventType === 'INSERT') {
+            if (note.author_id === userRef.current?.id) return
+            addNote(note)
+          }
+          if (eventType === 'UPDATE') updateNote(note.id, note)
+          // if (eventType === 'DELETE') removeNote(oldRow.id)
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'arrows', filter: `board_id=eq.${board_id}` },
+        ({ eventType, new: newRow }) => {
+          console.log("ahh")
+          const arrow = newRow as Arrow
+          if (eventType === 'INSERT') {
+            if (arrow.author_id === userRef.current?.id) return
+            addArrow(arrow)
+          }
+          if (eventType === 'UPDATE') updateArrow(arrow.id, arrow)
           // if (eventType === 'DELETE') removeNote(oldRow.id)
         }
       )

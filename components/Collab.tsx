@@ -15,13 +15,20 @@ export default function CollabLayer() {
 						top: cursor.y,
 					}}
 						key={cursor.user_id}
+					// onPointerDown={(e) => {
+					// 	e.stopPropagation()
+					// 	handlePointerDown(e)
+					// }}
+					// onPointerMove={handlePointerMove}
+					// onPointerUp={handlePointerUp}
 					>
 						<div style={{
-							backgroundColor: cursor.color,
+							backgroundColor: "#00FF00",
 							width: `20px`,
 							height: `20px`,
 						}}
 						>
+							{cursor.user_email}
 						</div>
 					</div>
 				)
