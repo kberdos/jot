@@ -21,46 +21,40 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="centered-container">
       {user ? (
-        <div className="text-center space-y-6">
-          <p className="text-gray-600">Welcome, {user.email}</p>
+        <div className="column-center" style={{ textAlign: "center" }}>
+          <p className="text-grey text-large">Welcome, {user.email}</p>
 
-          <div className="flex flex-col gap-4 items-center">
-            <button onClick={viewBoards}>Your Boards</button>
+          <div className="column-center" style={{ marginTop: "1.5rem" }}>
+            <button className="button grey-button" onClick={viewBoards}>Your Boards</button>
 
-            <button onClick={handleNewBoard}>New Board</button>
+            <button className="button blue-button" onClick={handleNewBoard}>New Board</button>
 
             <button
               onClick={logout}
-              className="text-sm text-gray-500 hover:underline mt-4"
+              className="text-small text-grey"
+              style={{ marginTop: "1rem", cursor: "pointer" }}
             >
               Sign Out
             </button>
           </div>
         </div>
       ) : (
-        <div className="text-center space-y-8">
-          {/* Title */}
-          <h1
-            className="text-7xl italic"
-            style={{ fontFamily: "EB Garamond, serif" }}
-          >
+        <div className="column-center" style={{ textAlign: "center" }}>
+         
+          <h1>
             Jot
           </h1>
-
-          {/* Tagline */}
-          <p
-            className="text-black italic text-xl"
-            style={{ fontFamily: "EB Garamond, serif" }}
-          >
+          
+          <p className="text-xl" style={{ fontStyle: "italic" }}>
             ~ you ought to jot it down ~
           </p>
 
-          {/* Button */}
           <button onClick={login} className="button blue-button">
             Sign in with Google
           </button>
+          
         </div>
       )}
     </div>
