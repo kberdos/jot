@@ -58,7 +58,7 @@ export default function Home() {
           </p>
 
           {/* Button */}
-          <button onClick={login} className="blue-button">
+          <button onClick={login} className="button blue-button">
             Sign in with Google
           </button>
         </div>
