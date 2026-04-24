@@ -22,4 +22,7 @@
 - a toscreen function to convert coordinates between camera and screen 
 
 - IMPORTANT: canvas needs to like keep all its elements within it, not them being absolutely positioned on the window.
+- IMPORTANT: add last modified to all objects 
+- thumbnail?
+- override the pinch zoom thing 
 
