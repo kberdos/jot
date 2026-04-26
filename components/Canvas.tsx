@@ -44,7 +44,7 @@ const Canvas = () => {
 		<div className="w-full h-full overflow-hidden"
 			style={{
 				backgroundColor: "var(--light-grey)",
-				backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
+				// backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
 				backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
 				backgroundPosition: `${camera.x % (30 * camera.zoom)}px ${camera.y % (30 * camera.zoom)}px`,
 			}}
@@ -173,8 +173,53 @@ const Canvas = () => {
 				  </defs>
 				</svg>
 				</button>
-
 			</div>
+
+			<div
+				className="navbar"
+				onPointerDown={(e) => e.stopPropagation()}
+				>
+				<div className="nav-pill">
+					<span className="nav-logo">Jot</span>
+					<span className="text-xxl">•</span>
+					<span className="text-xl cursor-pointer"
+					onDoubleClick={handleRenameBoard}
+					>
+					{board?.name || "Jot Design Brainstorm"}
+					</span>
+				</div>
+
+				<div className="nav-center">
+					<button className="text-xl button white-button shadow-[0_10px_20px_rgba(0,0,0,0.50)]">
+					Board
+					</button>
+					<button className="text-xl button white-button shadow-[0_10px_20px_rgba(0,0,0,0.50)]">
+					Table
+					</button>
+				</div>
+
+				<button className="text-xl button blue-button">
+					Share
+				</button>
+			</div>
+
+			<button
+					onPointerDown={(e) => e.stopPropagation()}
+					className="absolute right-6 bottom-6 w-[80px] h-[80px] rounded-full bg-[var(--white)] shadow-[0_10px_20px_rgba(0,0,0,0.30)] flex items-center justify-center cursor-pointer hover:bg-[var(--light-grey)]"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="40"
+						height="32"
+						viewBox="0 0 57 47"
+						fill="none"
+					>
+						<path
+						d="M5.16667 23.25C2.325 23.25 0 20.925 0 18.0833V5.16667C0 2.325 2.325 0 5.16667 0H25.8333C28.675 0 31 2.325 31 5.16667V18.0833C31 20.925 28.675 23.25 25.8333 23.25H20.6667V31L12.9167 23.25H5.16667ZM51.6667 38.75C54.5083 38.75 56.8333 36.425 56.8333 33.5833V20.6667C56.8333 17.825 54.5083 15.5 51.6667 15.5H36.1667V18.0833C36.1667 23.7667 31.5167 28.4167 25.8333 28.4167V33.5833C25.8333 36.425 28.1583 38.75 31 38.75H36.1667V46.5L43.9167 38.75H51.6667Z"
+						fill="black"
+						/>
+					</svg>
+				</button>
 		</div >
 	)
 }

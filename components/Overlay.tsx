@@ -44,9 +44,9 @@ export default function Home() {
 				}
 			</div>
 			<Canvas />
-			<div className="flex-grow w-[540px]">
+			{/* <div className="flex-grow w-[540px]">
 				<JotChat />
-			</div >
+			</div > */}
 		</div >
 	)
 }

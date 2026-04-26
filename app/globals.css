@@ -110,6 +110,15 @@ body {
   background-color: var(--grey);
 }
 
+.white-button {
+  background-color: var(--white);
+  color: var(--black);
+}
+
+.white-button:hover {
+  background-color: var(--grey);
+}
+
 /* Sticky Note */
 
 .note {
@@ -320,5 +329,56 @@ body {
   background: var(--white);
   padding: 0.5rem;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.30);
+}
+
+.navbar {
+  position: absolute;
+  top: 1.5rem;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 1.5rem; 
+
+}
+
+/* (Jot + title) */
+.nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  background-color: var(--white);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.75rem;
+}
+
+/* Jot logo */
+.nav-logo {
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-size: 24px;
+}
+
+/* Center buttons */
+/* .nav-center {
+  display: flex;
+  gap: 0.75rem;
+} */
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Active tab */
+.nav-active {
+  background: var(--grey);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
 }
