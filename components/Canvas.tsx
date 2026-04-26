@@ -1,13 +1,14 @@
 "use client"
 
 import { useCameraStore } from "@/util/objects/camera"
-import { useNoteStore } from "@/util/objects/note"
+import { saveNote, useNoteStore } from "@/util/objects/note"
 import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
+import CollabLayer from "./Collab"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -15,9 +16,9 @@ const ZOOM_MAX = 3
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, newNote } = useNoteStore()
+	const { notes, createNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
-	const { arrows, setAddMode, ghost } = useArrowStore()
+	const { setAddMode } = useArrowStore()
 
 	const { user } = useAuthStore()
 
@@ -71,6 +72,7 @@ const Canvas = () => {
 					<NoteObj key={note.id} note={note} />
 				))}
 				<ArrowLayer />
+				<CollabLayer />
 
 			</div>
 
@@ -86,7 +88,7 @@ const Canvas = () => {
 
 			<button style={{
 				position: "absolute",
-				right: 20,
+				left: 400,
 				bottom: 20,
 			}}
 				className={`border p-3 transition-opacity duration-500 ${camera.x !== 0 || camera.y !== 0 || camera.zoom !== 1 ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -131,7 +133,10 @@ const Canvas = () => {
 				
 				<button
 					// XXX: change coords of new note to not be 0, 0 
-					onClick={() => newNote(0, 0, board!.id, user!.id)}
+					onClick={() => {
+						const n = createNote(0, 0, board!.id, user!.id)
+						saveNote(n)
+					}}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="icon"
 				>

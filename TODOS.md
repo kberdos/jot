@@ -3,10 +3,8 @@
 - "sign in to view your board" should actually direct you to sign in or something
 - order boards in your boards page by time_created
 - make all supabase functionality captured in some util dir
-- need something like supabase realtime
 - persist camera coordinates on the board
 - modal to add name when you make a board
-- get rid of the sandbox
 - idea / question note type 
 - tree/graph view seems hard (more vertical). prob make more abstract representation
 - resizable chat window -> overlays 
@@ -16,11 +14,15 @@
 - hyperlinks straight onto the board
 - RLS 
 - backspace to delete a note
-- name annotation
+- name annotation on cards
 - dont resize but just make it longer when the text overflows
 - use sendbeacon to save the camera when you exit the board. A concern is with collaboration
 
 - z index for arrows
-- multiple arrows is screwed up big time
+- a toscreen function to convert coordinates between camera and screen 
 
+- IMPORTANT: canvas needs to like keep all its elements within it, not them being absolutely positioned on the window.
+- IMPORTANT: add last modified to all objects 
+- thumbnail?
+- override the pinch zoom thing 
 

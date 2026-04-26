@@ -5,6 +5,7 @@
 import { login, logout, useAuthStore } from "@/util/auth/auth"
 import Canvas from "./Canvas"
 import { useRouter } from "next/navigation"
+import JotChat from "./JotChat"
 
 
 export default function Home() {
@@ -14,10 +15,10 @@ export default function Home() {
 		router.push("/boards")
 	}
 	return (
-		<div className="w-screen h-screen">
+		<div className="w-screen h-screen flex flex-row">
 			<div style={{
 				position: "absolute",
-				right: 20,
+				left: 20,
 				top: 20,
 			}}
 				onPointerDown={(e) => e.stopPropagation()}
@@ -43,6 +44,9 @@ export default function Home() {
 				}
 			</div>
 			<Canvas />
+			<div className="flex-grow w-[540px]">
+				<JotChat />
+			</div >
 		</div >
 	)
 }

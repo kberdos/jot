@@ -15,7 +15,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
-	const { newArrow: addArrow, addMode, setAddMode, setGhost, ghost } = useArrowStore()
+	const { createArrow, addMode, setAddMode, setGhost, ghost } = useArrowStore()
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
 		if (addMode === "ACTIVE") {
@@ -37,7 +37,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 			}
 			setGhost(undefined)
 			setAddMode("NONE")
-			addArrow(arrow)
+			createArrow(arrow)
 		}
 	}
 
