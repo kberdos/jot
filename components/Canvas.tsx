@@ -44,7 +44,7 @@ const Canvas = () => {
 		<div className="w-full h-full overflow-hidden"
 			style={{
 				backgroundColor: "var(--light-grey)",
-				// backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
+				backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
 				backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
 				backgroundPosition: `${camera.x % (30 * camera.zoom)}px ${camera.y % (30 * camera.zoom)}px`,
 			}}
