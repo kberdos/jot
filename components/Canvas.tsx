@@ -205,7 +205,7 @@ const Canvas = () => {
 
 			<button
 					onPointerDown={(e) => e.stopPropagation()}
-					className="absolute right-6 bottom-6 w-[80px] h-[80px] rounded-full bg-[var(--white)] shadow-[0_10px_20px_rgba(0,0,0,0.30)] flex items-center justify-center cursor-pointer hover:bg-[var(--light-grey)]"
+					className="absolute right-6 bottom-6 w-[80px] h-[80px] rounded-full bg-[var(--white)] shadow-[0_10px_20px_rgba(0,0,0,0.30)] flex items-center justify-center cursor-pointer hover:bg-[var(--grey)]"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
