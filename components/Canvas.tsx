@@ -9,6 +9,8 @@ import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
+import Link from "next/link";
+
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -180,10 +182,12 @@ const Canvas = () => {
 				onPointerDown={(e) => e.stopPropagation()}
 				>
 				<div className="nav-pill">
-					<span className="nav-logo">Jot</span>
+				<Link href="/" className="nav-logo cursor-pointer hoverable">
+				Jot
+				</Link>
 					<span className="text-xxl">•</span>
-					<span className="text-xl cursor-pointer"
-					onDoubleClick={handleRenameBoard}
+					<span className="text-xl cursor-pointer hoverable"
+					onClick={handleRenameBoard}
 					>
 					{board?.name || "Jot Design Brainstorm"}
 					</span>

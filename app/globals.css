@@ -382,3 +382,15 @@ body {
   background: var(--light-grey);
   box-shadow: 0 6px 14px rgba(0,0,0,0.15);
 }
+
+.hoverable {
+  display: inline-block; 
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.hoverable:hover {
+  background-color: var(--grey);
+}
