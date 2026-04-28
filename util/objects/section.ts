@@ -57,13 +57,16 @@ export async function saveSection(section: Section) {
 	if (error) throw error
 }
 
-function noteOverlapsSection(note: Note, section: Section): boolean {
-	return (
-		note.x < section.x + section.width &&
-		note.x + note.width > section.x &&
-		note.y < section.y + section.height &&
-		note.y + note.height > section.y
-	)
+function noteIsInSection(note: Note, section: Section): boolean {
+	const overlapX = Math.min(note.x + note.width, section.x + section.width) - Math.max(note.x, section.x);
+	const overlapY = Math.min(note.y + note.height, section.y + section.height) - Math.max(note.y, section.y);
+
+	if (overlapX <= 0 || overlapY <= 0) return false;
+
+	const overlapArea = overlapX * overlapY;
+	const noteArea = note.width * note.height;
+
+	return overlapArea / noteArea >= 0.5;
 }
 
 export const useSectionStore = create<SectionStore>((set, get) => ({
@@ -110,7 +113,7 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 		const section = get().sections.find(s => s.id === sectionId)
 		if (!section) return []
 		const notes = useNoteStore.getState().notes
-		return notes.filter(note => noteOverlapsSection(note, section))
+		return notes.filter(note => noteIsInSection(note, section))
 	},
 	addSectionMode: "NONE",
 	setAddSectionMode: (val: AddSectionMode) => {

@@ -3,26 +3,51 @@
 import { Coordinate, useCameraStore } from "@/util/objects/camera"
 import { GhostSection, Section, useSectionStore } from "@/util/objects/section"
 import { toCamera } from "@/util/pointerfunctions"
-import { useEffect, useState } from "react"
-import { handlePointerDown } from "@/util/pointerfunctions"
+import { useEffect, useRef, useState } from "react"
+import { saveNote, useNoteStore } from "@/util/objects/note"
 
 
 
 export const SectionComponent = ({ section }: { section: Section }) => {
 	const camera = useCameraStore(state => state.camera)
-	const { updateSection } = useSectionStore()
+	const { updateSection, getNotesInSection } = useSectionStore()
+	const { updateNote } = useNoteStore()
 
-	const handlePointerUp = (e: React.PointerEvent) => {
-		e.currentTarget.releasePointerCapture(e.pointerId)
-		// saveSection
+
+	const draggedNoteIds = useRef<Set<string>>(new Set())
+
+	const handlePointerDown = (e: React.PointerEvent) => {
+		e.stopPropagation()
+		e.currentTarget.setPointerCapture(e.pointerId)
+		draggedNoteIds.current = new Set(
+			getNotesInSection(section.id).map(note => note.id)
+		)
 	}
+
 	const handlePointerMove = (e: React.PointerEvent) => {
 		e.stopPropagation()
 		if (e.buttons !== 1) return;
+		const dx = e.movementX / camera.zoom;
+		const dy = e.movementY / camera.zoom;
 		updateSection(section.id, {
-			x: section.x + e.movementX / camera.zoom,
-			y: section.y + e.movementY / camera.zoom,
+			x: section.x + dx,
+			y: section.y + dy,
 		})
+		getNotesInSection(section.id)
+			.filter(note => draggedNoteIds.current.has(note.id))
+			.forEach(note => updateNote(note.id, {
+				x: note.x + dx,
+				y: note.y + dy,
+			}))
+	}
+
+	const handlePointerUp = async (e: React.PointerEvent) => {
+		e.currentTarget.releasePointerCapture(e.pointerId)
+		await Promise.all(
+			getNotesInSection(section.id).map(note => saveNote(note))
+		)
+		draggedNoteIds.current = new Set()
+		// saveSection
 	}
 
 	return (
@@ -31,10 +56,7 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 			left: section.x,
 			top: section.y,
 		}}
-			onPointerDown={(e) => {
-				e.stopPropagation()
-				handlePointerDown(e)
-			}}
+			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 		>
