@@ -28,3 +28,4 @@
 - tool calling is pretty bad + slow
 
 - first priority: zoom in thing
+- second: rename + resize sections
