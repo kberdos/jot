@@ -30,8 +30,6 @@ const tools = [
 ]
 
 export async function POST(req: Request) {
-
-	// ✅ Supabase client (request-scoped)
 	const supabase = createClient(
 		process.env.NEXT_PUBLIC_SUPABASE_URL!,
 		process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -53,7 +51,7 @@ export async function POST(req: Request) {
 
 	let usedTool = false
 
-	// 🔁 tool loop (max 3 turns)
+	// max 3 attempts in the tool loop
 	for (let i = 0; i < 3; i++) {
 		const response = await ai.models.generateContent({
 			model: MODEL_NAME,
@@ -83,7 +81,7 @@ export async function POST(req: Request) {
 			}
 			| undefined
 
-		// 🛠 TOOL EXECUTION
+		// call the tools
 		if (functionCallPart?.functionCall) {
 			usedTool = true
 
@@ -111,7 +109,7 @@ export async function POST(req: Request) {
 					)
 				}
 
-				// 🔁 Feed tool result back into model
+				// feed tool result back into model
 				contents.push(
 					{
 						role: "model",
@@ -147,7 +145,7 @@ export async function POST(req: Request) {
 			}
 		}
 
-		// ✅ FINAL RESPONSE
+		// final response 
 		const textPart = parts.find((p: any) => p.text)
 
 		if (textPart?.text) {
