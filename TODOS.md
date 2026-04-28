@@ -26,3 +26,5 @@
 
 - IMPORTANT: if you key press on jotchat it triggers the useEffect from canvas
 - tool calling is pretty bad + slow
+
+- first priority: zoom in thing
