@@ -11,6 +11,7 @@ import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
 import { GhostSection, useSectionStore } from "@/util/objects/section"
 import { GhostSectionComponent } from "./Section"
+import { useEffect } from "react"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -20,7 +21,7 @@ const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, createNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
-	const { setAddArrowMode } = useArrowStore()
+	const { setAddArrowMode, setGhostArrow } = useArrowStore()
 	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection } = useSectionStore()
 
 	const { user } = useAuthStore()
@@ -56,6 +57,26 @@ const Canvas = () => {
 		}
 		e.currentTarget.setPointerCapture(e.pointerId)
 	}
+
+	// cancel out of all selections, drawings, etc.
+	const handleEscape = () => {
+		setAddArrowMode("NONE")
+		setGhostArrow(undefined)
+		setAddSectionMode("NONE")
+		setGhostSection(undefined)
+	}
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			console.log("Key pressed:", e.key);
+
+			if (e.key === "Escape") { handleEscape() }
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, []);
 
 	return (
 		<div className="w-full h-full overflow-hidden"
@@ -150,7 +171,6 @@ const Canvas = () => {
 					New Note
 				</button>
 				<button
-					// XXX: change coords of new note to not be 0, 0 
 					onClick={() => setAddArrowMode("ACTIVE")}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="border p-3"
