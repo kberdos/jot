@@ -2,12 +2,11 @@ import { create } from "zustand"
 import { supabase } from "@/util/supabase/supabase"
 import { Note, useNoteStore } from "./note"
 
-const DEFAULT_SECTION_WIDTH = 400
-const DEFAULT_SECTION_HEIGHT = 400
-const DEFAULT_SECTION_COLOR = "#E8F4FD"
+export const DEFAULT_SECTION_COLOR = "#FFFFFF"
 
 export interface Section {
 	id: string;
+	title: string;
 	x: number;
 	y: number;
 	width: number;
@@ -46,6 +45,7 @@ export async function saveSection(section: Section) {
 		.from("sections")
 		.upsert({
 			id: section.id,
+			title: section.title,
 			x: section.x,
 			y: section.y,
 			color: section.color,
@@ -57,7 +57,7 @@ export async function saveSection(section: Section) {
 	if (error) throw error
 }
 
-function noteIsInSection(note: Note, section: Section): boolean {
+export function noteIsInSection(note: Note, section: Section): boolean {
 	const overlapX = Math.min(note.x + note.width, section.x + section.width) - Math.max(note.x, section.x);
 	const overlapY = Math.min(note.y + note.height, section.y + section.height) - Math.max(note.y, section.y);
 

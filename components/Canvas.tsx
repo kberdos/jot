@@ -9,7 +9,7 @@ import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
-import { GhostSection, Section, useSectionStore } from "@/util/objects/section"
+import { DEFAULT_SECTION_COLOR, GhostSection, noteIsInSection, saveSection, Section, useSectionStore } from "@/util/objects/section"
 import { GhostSectionComponent, SectionComponent } from "./Section"
 import { useEffect } from "react"
 
@@ -19,7 +19,7 @@ const ZOOM_MAX = 3
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, createNote } = useNoteStore()
+	const { notes, createNote, updateNote } = useNoteStore()
 	const { sections } = useSectionStore()
 	const { board, renameBoard } = useBoardStore()
 	const { setAddArrowMode, setGhostArrow } = useArrowStore()
@@ -46,7 +46,8 @@ const Canvas = () => {
 		}
 	}
 
-	const handlePointerDown = (e: React.PointerEvent) => {
+	const handlePointerDown = async (e: React.PointerEvent) => {
+		const target = e.currentTarget
 		if (addSectionMode === "ACTIVE") {
 			const coords = toCamera(e, camera)
 			const newGhostSection: GhostSection = {
@@ -67,9 +68,10 @@ const Canvas = () => {
 
 			const section: Section = {
 				id: "",
+				title: "Untitled Section",
 				board_id: board!.id,
 				author_id: user!.id,
-				color: "white",
+				color: DEFAULT_SECTION_COLOR,
 				x,
 				y,
 				width,
@@ -78,8 +80,16 @@ const Canvas = () => {
 			setGhostSection(undefined)
 			setAddSectionMode("NONE")
 			createSection(section)
+			saveSection(section)
+			const containedNotes = notes.filter(note => noteIsInSection(note, section))
+			containedNotes.forEach(note => updateNote(note.id, { section_id: section.id }))
+
+			await Promise.all([
+				saveSection(section),
+				...containedNotes.map(note => saveNote({ ...note, section_id: section.id }))
+			])
 		}
-		e.currentTarget.setPointerCapture(e.pointerId)
+		target.setPointerCapture(e.pointerId)
 	}
 
 	// cancel out of all selections, drawings, etc.
@@ -191,6 +201,11 @@ const Canvas = () => {
 					// XXX: change coords of new note to not be 0, 0 
 					onClick={() => {
 						const n = createNote(0, 0, board!.id, user!.id)
+						const section = sections.find(s => noteIsInSection(n, s))
+						if (section) {
+							n.section_id = section.id
+							updateNote(n.id, { section_id: section.id })
+						}
 						saveNote(n)
 					}}
 					onPointerDown={(e) => e.stopPropagation()}

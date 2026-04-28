@@ -1,7 +1,7 @@
 "use client"
 
 import { Coordinate, useCameraStore } from "@/util/objects/camera"
-import { GhostSection, Section, useSectionStore } from "@/util/objects/section"
+import { GhostSection, noteIsInSection, saveSection, Section, useSectionStore } from "@/util/objects/section"
 import { toCamera } from "@/util/pointerfunctions"
 import { useEffect, useRef, useState } from "react"
 import { saveNote, useNoteStore } from "@/util/objects/note"
@@ -11,17 +11,11 @@ import { saveNote, useNoteStore } from "@/util/objects/note"
 export const SectionComponent = ({ section }: { section: Section }) => {
 	const camera = useCameraStore(state => state.camera)
 	const { updateSection, getNotesInSection } = useSectionStore()
-	const { updateNote } = useNoteStore()
-
-
-	const draggedNoteIds = useRef<Set<string>>(new Set())
+	const { notes, updateNote } = useNoteStore()
 
 	const handlePointerDown = (e: React.PointerEvent) => {
 		e.stopPropagation()
 		e.currentTarget.setPointerCapture(e.pointerId)
-		draggedNoteIds.current = new Set(
-			getNotesInSection(section.id).map(note => note.id)
-		)
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
@@ -29,25 +23,28 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 		if (e.buttons !== 1) return;
 		const dx = e.movementX / camera.zoom;
 		const dy = e.movementY / camera.zoom;
-		updateSection(section.id, {
-			x: section.x + dx,
-			y: section.y + dy,
-		})
-		getNotesInSection(section.id)
-			.filter(note => draggedNoteIds.current.has(note.id))
-			.forEach(note => updateNote(note.id, {
-				x: note.x + dx,
-				y: note.y + dy,
-			}))
+		updateSection(section.id, { x: section.x + dx, y: section.y + dy })
+		notes
+			.filter(note => note.section_id === section.id)
+			.forEach(note => updateNote(note.id, { x: note.x + dx, y: note.y + dy }))
 	}
 
 	const handlePointerUp = async (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
-		await Promise.all(
-			getNotesInSection(section.id).map(note => saveNote(note))
+
+		// assign newly overlapping notes that don't belong to this section yet
+		const sweptNotes = notes.filter(note =>
+			note.section_id !== section.id && noteIsInSection(note, section)
 		)
-		draggedNoteIds.current = new Set()
-		// saveSection
+		sweptNotes.forEach(note => updateNote(note.id, { section_id: section.id }))
+
+		await Promise.all([
+			...notes
+				.filter(note => note.section_id === section.id)
+				.map(note => saveNote(note)),
+			...sweptNotes.map(note => saveNote({ ...note, section_id: section.id })),
+			saveSection(section)
+		])
 	}
 
 	return (

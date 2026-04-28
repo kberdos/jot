@@ -6,6 +6,7 @@ import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
 import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
 import { Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
+import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
 
 
@@ -16,6 +17,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
 	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow } = useArrowStore()
+	const { sections } = useSectionStore()
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
 		if (addArrowMode === "ACTIVE") {
@@ -66,7 +68,10 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const handlePointerUp = (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
-		saveNote(note)
+		// XXX: maybe make this a zustand function
+		const section = sections.find(s => noteIsInSection(note, s))
+		updateNote(note.id, { section_id: section?.id ?? null })
+		saveNote({ ...note, section_id: section?.id ?? null })
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {

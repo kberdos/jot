@@ -15,9 +15,10 @@ export interface Note {
 	color: string;
 	board_id: string;
 	author_id: string;
+	section_id?: string | null;
 }
-export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 
+export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 
 interface NoteStore {
 	notes: Note[];
@@ -43,6 +44,7 @@ export async function saveNote(note: Note) {
 			height: note.height,
 			board_id: note.board_id,
 			author_id: note.author_id,
+			section_id: note.section_id,
 		}, { onConflict: 'id' })
 	if (error) throw error
 }
