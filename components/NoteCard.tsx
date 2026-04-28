@@ -83,6 +83,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 			position: "absolute",
 			left: note.x,
 			top: note.y,
+			zIndex: 500,
 		}}
 			onPointerDown={(e) => {
 				e.stopPropagation()

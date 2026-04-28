@@ -22,4 +22,5 @@
 - fix: Gemini API fails sometimes
 
 - FIX: if you zoom in / out while drawing section it screws up the selection
+- remove all next boilerplate stuff
 
