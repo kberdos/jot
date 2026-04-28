@@ -63,6 +63,7 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 				height: `${section.height}px`,
 			}}
 			>
+				{section.title}
 			</div>
 		</div>
 	)

@@ -19,8 +19,10 @@
 - order boards in your boards page by time_modified
 - thumbnail?
 - override the pinch zoom thing 
-- fix: Gemini API fails sometimes
 
 - FIX: if you zoom in / out while drawing section it screws up the selection
 - remove all next boilerplate stuff
 
+
+- IMPORTANT: if you key press on jotchat it triggers the useEffect from canvas
+- tool calling is pretty bad + slow
