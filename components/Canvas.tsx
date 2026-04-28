@@ -108,6 +108,7 @@ const Canvas = () => {
 				backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
 				backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
 				backgroundPosition: `${camera.x % (30 * camera.zoom)}px ${camera.y % (30 * camera.zoom)}px`,
+				backgroundColor: "#F5F5F5",
 			}}
 			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
