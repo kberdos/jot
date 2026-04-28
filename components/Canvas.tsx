@@ -10,6 +10,7 @@ import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
 import { GhostSection, useSectionStore } from "@/util/objects/section"
+import { GhostSectionComponent } from "./Section"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -20,7 +21,7 @@ const Canvas = () => {
 	const { notes, createNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
 	const { setAddArrowMode } = useArrowStore()
-	const { addSectionMode, setAddSectionMode, setGhostSection } = useSectionStore()
+	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection } = useSectionStore()
 
 	const { user } = useAuthStore()
 
@@ -88,6 +89,9 @@ const Canvas = () => {
 				))}
 				<ArrowLayer />
 				<CollabLayer />
+				{ghostSection &&
+					<GhostSectionComponent ghostSection={ghostSection} />
+				}
 
 			</div>
 
