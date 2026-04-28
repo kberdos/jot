@@ -23,7 +23,7 @@ const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, createNote, updateNote } = useNoteStore()
 	const { sections } = useSectionStore()
-	const { board, renameBoard } = useBoardStore()
+	const { board, renameBoard, isChatOpen, setIsChatOpen } = useBoardStore()
 	const { setAddArrowMode, setGhostArrow } = useArrowStore()
 	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection, createSection } = useSectionStore()
 
@@ -47,6 +47,14 @@ const Canvas = () => {
 			await renameBoard(name)
 		}
 	}
+
+	// const handleRenameSection = async () => {
+	// 	let name = prompt("Enter new name")
+	// 	if (name) {
+	// 		console.log(name)
+	// 		await renameBoard(name)
+	// 	}
+	// }
 
 	const handlePointerDown = async (e: React.PointerEvent) => {
 		const target = e.currentTarget
@@ -216,8 +224,8 @@ const Canvas = () => {
 						}
 						saveNote(n)
 					}}
-<!-- 					onPointerDown={(e) => e.stopPropagation()}
-					className="border p-3" -->
+// <!-- 					onPointerDown={(e) => e.stopPropagation()}
+// 					className="border p-3" -->
 				>
 				<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38" fill="none">
 				  <path d="M11.0854 6.83698C9.59373 6.04573 7.8467 7.31745 8.13967 8.97898L12.1326 31.624C12.4664 33.5172 15.0027 33.9266 15.915 32.2338L20.2492 24.1939C20.4091 23.8976 20.6341 23.6413 20.9073 23.4443C21.1804 23.2473 21.4946 23.1147 21.8263 23.0565L30.9488 21.448C32.8499 21.1127 33.2523 18.5599 31.5449 17.6584L11.0854 6.83698Z" fill="black"/>
@@ -263,6 +271,7 @@ const Canvas = () => {
 				// TODO: Add logic for it
 				className="icon"
 				onPointerDown={(e) => e.stopPropagation()}
+				onClick={() => { setAddSectionMode("ACTIVE") }}
 				>
 				<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
 				  <g clipPath="url(#clip0_74_275)">
@@ -275,13 +284,13 @@ const Canvas = () => {
 				  </defs>
 				</svg>
 				</button>
-				<button
+				{/* <button
 					onClick={() => { setAddSectionMode("ACTIVE") }}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="border p-3"
 				>
 					Draw Section
-				</button>
+				</button> */}
 			</div>
 
 			<div
@@ -309,14 +318,23 @@ const Canvas = () => {
 					</button>
 				</div>
 
-				<button className="text-xl button blue-button">
-					Share
-				</button>
+				{/* {!isChatOpen && ( */}
+					<button   className={`text-xl button blue-button ${
+						isChatOpen ? "hidden" : ""
+					  }`}>
+						Share
+					</button>
+				{/* )} */}
 			</div>
 
+			{/* {!isChatOpen && ( */}
 			<button
+			// CHAT ICON
 					onPointerDown={(e) => e.stopPropagation()}
-					className="absolute right-6 bottom-6 w-[80px] h-[80px] rounded-full bg-[var(--white)] shadow-[0_10px_20px_rgba(0,0,0,0.30)] flex items-center justify-center cursor-pointer hover:bg-[var(--grey)]"
+					onClick={() => setIsChatOpen(true)} 
+					className={`absolute right-6 bottom-6 w-[80px] h-[80px] rounded-full bg-[var(--white)] shadow-[0_10px_20px_rgba(0,0,0,0.30)] flex items-center justify-center cursor-pointer hover:bg-[var(--grey)] ${
+						isChatOpen ? "hidden" : ""
+					  }`}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -331,6 +349,7 @@ const Canvas = () => {
 						/>
 					</svg>
 				</button>
+			{/* )} */}
 		</div >
 	)
 }
