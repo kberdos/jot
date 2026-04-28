@@ -6,6 +6,7 @@ import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
 import { CollabCursor, useCollabStore } from "@/util/objects/collab"
 import { Note, useNoteStore } from "@/util/objects/note"
+import { useSectionStore } from "@/util/objects/section"
 import { supabase } from "@/util/supabase/supabase"
 import { throttle } from "lodash"
 import { useParams } from "next/navigation"
@@ -17,6 +18,7 @@ export default function Home() {
   const { setBoard } = useBoardStore()
   const { addNote, loadNotes, updateNote } = useNoteStore()
   const { loadArrows, addArrow, updateArrow } = useArrowStore()
+  const { loadSections } = useSectionStore()
   const { user } = useAuthStore()
   const { camera } = useCameraStore()
   const { upsertCursor } = useCollabStore()
@@ -70,7 +72,10 @@ export default function Home() {
             if (note.author_id === userRef.current?.id) return
             addNote(note)
           }
-          if (eventType === 'UPDATE') updateNote(note.id, note)
+          if (eventType === 'UPDATE') {
+            if (note.author_id === userRef.current?.id) return
+            updateNote(note.id, note)
+          }
           // if (eventType === 'DELETE') removeNote(oldRow.id)
         }
       )
@@ -90,7 +95,7 @@ export default function Home() {
       .subscribe()
 
     setBoard(board_id)
-    loadNotes(board_id).then(() => loadArrows(board_id))
+    loadSections(board_id).then(() => loadNotes(board_id)).then(() => loadArrows(board_id))
 
     const handleMouseMove = (e: MouseEvent) => sendCursor(e.clientX, e.clientY)
     window.addEventListener('mousemove', handleMouseMove)

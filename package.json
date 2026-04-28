@@ -11,7 +11,7 @@
   "dependencies": {
     "@google/genai": "^1.50.1",
     "@supabase/ssr": "^0.10.2",
-    "@supabase/supabase-js": "^2.103.2",
+    "@supabase/supabase-js": "^2.105.1",
     "lodash": "^4.18.1",
     "next": "^16.2.4",
     "perfect-arrows": "^0.3.7",

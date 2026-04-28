@@ -6,6 +6,7 @@ import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
 import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
 import { Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
+import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
 
 
@@ -15,28 +16,29 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
-	const { createArrow, addMode, setAddMode, setGhost, ghost } = useArrowStore()
+	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow } = useArrowStore()
+	const { sections } = useSectionStore()
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
-		if (addMode === "ACTIVE") {
-			const newGhost: GhostArrow = {
+		if (addArrowMode === "ACTIVE") {
+			const newGhostArrow: GhostArrow = {
 				start_note_id: note.id,
 				start_note_side: noteSide,
 			}
-			setGhost(newGhost)
-			setAddMode("ADDING")
+			setGhostArrow(newGhostArrow)
+			setAddArrowMode("ADDING")
 		} else {
 			const arrow: Arrow = {
 				id: "",
 				board_id: board!.id,
 				author_id: user!.id,
-				start_note_id: ghost!.start_note_id,
-				start_note_side: ghost!.start_note_side,
+				start_note_id: ghostArrow!.start_note_id,
+				start_note_side: ghostArrow!.start_note_side,
 				end_note_id: note.id,
 				end_note_side: noteSide,
 			}
-			setGhost(undefined)
-			setAddMode("NONE")
+			setGhostArrow(undefined)
+			setAddArrowMode("NONE")
 			createArrow(arrow)
 		}
 	}
@@ -45,6 +47,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 		const { x, y } = getNodeOffsets(note, props.noteSide)
 
 		return (
+			// XXX: this placement is really sus lol
 			<button
 				style={{
 					position: "absolute",
@@ -65,7 +68,10 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const handlePointerUp = (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
-		saveNote(note)
+		// XXX: maybe make this a zustand function
+		const section = sections.find(s => noteIsInSection(note, s))
+		updateNote(note.id, { section_id: section?.id ?? null })
+		saveNote({ ...note, section_id: section?.id ?? null })
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
@@ -82,6 +88,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 			position: "absolute",
 			left: note.x,
 			top: note.y,
+			zIndex: 500,
 		}}
 			onPointerDown={(e) => {
 				e.stopPropagation()
@@ -96,7 +103,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 				height: `${note.height}px`,
 			}}
 			>
-				{addMode !== "NONE" &&
+				{addArrowMode !== "NONE" &&
 					<div className="relative">
 						<ArrowTrigger noteSide="TOP" />
 						<ArrowTrigger noteSide="RIGHT" />

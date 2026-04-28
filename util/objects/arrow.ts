@@ -21,7 +21,7 @@ export interface GhostArrow {
 }
 
 
-export type AddMode = "NONE" | "ACTIVE" | "ADDING"
+export type AddArrowMode = "NONE" | "ACTIVE" | "ADDING"
 
 interface ArrowStore {
 	arrows: Arrow[];
@@ -29,10 +29,10 @@ interface ArrowStore {
 	addArrow: (arrow: Arrow) => void
 	updateArrow: (id: string, changes: Partial<Arrow>) => void
 	loadArrows: (board_id: string) => Promise<void>;
-	ghost?: GhostArrow;
-	setGhost: (ghost?: GhostArrow) => void;
-	addMode: AddMode;
-	setAddMode: (val: AddMode) => void;
+	ghostArrow?: GhostArrow;
+	setGhostArrow: (ghost?: GhostArrow) => void;
+	addArrowMode: AddArrowMode;
+	setAddArrowMode: (val: AddArrowMode) => void;
 }
 
 export async function saveArrow(arrow: Arrow) {
@@ -82,16 +82,16 @@ export const useArrowStore = create<ArrowStore>((set, get) => ({
 			arrows: arrows,
 		}))
 	},
-	ghost: undefined,
-	setGhost: (ghost?: GhostArrow) => {
+	ghostArrow: undefined,
+	setGhostArrow: (ghost?: GhostArrow) => {
 		set(_ => ({
-			ghost: ghost,
+			ghostArrow: ghost,
 		}))
 	},
-	addMode: "NONE",
-	setAddMode: (val: AddMode) => {
+	addArrowMode: "NONE",
+	setAddArrowMode: (val: AddArrowMode) => {
 		set(_ => ({
-			addMode: val,
+			addArrowMode: val,
 		}))
 	}
 }))

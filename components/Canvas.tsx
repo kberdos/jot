@@ -2,7 +2,7 @@
 
 import { useCameraStore } from "@/util/objects/camera"
 import { saveNote, useNoteStore } from "@/util/objects/note"
-import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
+import { handlePointerUp, toCamera } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
@@ -11,7 +11,9 @@ import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
 import Link from "next/link";
 
-
+import { DEFAULT_SECTION_COLOR, GhostSection, noteIsInSection, saveSection, Section, useSectionStore } from "@/util/objects/section"
+import { GhostSectionComponent, SectionComponent } from "./Section"
+import { useEffect } from "react"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -19,13 +21,16 @@ const ZOOM_MAX = 3
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, createNote } = useNoteStore()
+	const { notes, createNote, updateNote } = useNoteStore()
+	const { sections } = useSectionStore()
 	const { board, renameBoard } = useBoardStore()
-	const { setAddMode } = useArrowStore()
+	const { setAddArrowMode, setGhostArrow } = useArrowStore()
+	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection, createSection } = useSectionStore()
 
 	const { user } = useAuthStore()
 
 
+	// panning the camera when dragging
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.buttons !== 1) return;
 		setCamera({
@@ -43,6 +48,72 @@ const Canvas = () => {
 		}
 	}
 
+	const handlePointerDown = async (e: React.PointerEvent) => {
+		const target = e.currentTarget
+		if (addSectionMode === "ACTIVE") {
+			const coords = toCamera(e, camera)
+			const newGhostSection: GhostSection = {
+				start_x: coords.x,
+				start_y: coords.y,
+			}
+			setGhostSection(newGhostSection)
+			setAddSectionMode("ADDING")
+		} else if (addSectionMode === "ADDING") {
+			// coords.x, coords.y
+			const coords = toCamera(e, camera)
+			// ghostSeciton.x, .y have coordinates
+			//
+			const x = Math.min(ghostSection!.start_x, coords.x)
+			const y = Math.min(ghostSection!.start_y, coords.y)
+			const width = Math.abs(coords.x - ghostSection!.start_x)
+			const height = Math.abs(coords.y - ghostSection!.start_y)
+
+			const section: Section = {
+				id: "",
+				title: "Untitled Section",
+				board_id: board!.id,
+				author_id: user!.id,
+				color: DEFAULT_SECTION_COLOR,
+				x,
+				y,
+				width,
+				height,
+			}
+			setGhostSection(undefined)
+			setAddSectionMode("NONE")
+			createSection(section)
+			saveSection(section)
+			const containedNotes = notes.filter(note => noteIsInSection(note, section))
+			containedNotes.forEach(note => updateNote(note.id, { section_id: section.id }))
+
+			await Promise.all([
+				saveSection(section),
+				...containedNotes.map(note => saveNote({ ...note, section_id: section.id }))
+			])
+		}
+		target.setPointerCapture(e.pointerId)
+	}
+
+	// cancel out of all selections, drawings, etc.
+	const handleEscape = () => {
+		setAddArrowMode("NONE")
+		setGhostArrow(undefined)
+		setAddSectionMode("NONE")
+		setGhostSection(undefined)
+	}
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			console.log("Key pressed:", e.key);
+
+			if (e.key === "Escape") { handleEscape() }
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, []);
+
 	return (
 		<div className="w-full h-full overflow-hidden"
 			style={{
@@ -50,6 +121,7 @@ const Canvas = () => {
 				backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
 				backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
 				backgroundPosition: `${camera.x % (30 * camera.zoom)}px ${camera.y % (30 * camera.zoom)}px`,
+				backgroundColor: "#F5F5F5",
 			}}
 			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
@@ -74,8 +146,14 @@ const Canvas = () => {
 				{notes.map(note => (
 					<NoteObj key={note.id} note={note} />
 				))}
+				{sections.map(section => (
+					<SectionComponent key={section.id} section={section} />
+				))}
 				<ArrowLayer />
 				<CollabLayer />
+				{ghostSection &&
+					<GhostSectionComponent ghostSection={ghostSection} />
+				}
 
 			</div>
 
@@ -128,6 +206,18 @@ const Canvas = () => {
 				// TODO: Add logic for it
 				className="icon"
 				onPointerDown={(e) => e.stopPropagation()}
+					// XXX: change coords of new note to not be 0, 0 
+					onClick={() => {
+						const n = createNote(0, 0, board!.id, user!.id)
+						const section = sections.find(s => noteIsInSection(n, s))
+						if (section) {
+							n.section_id = section.id
+							updateNote(n.id, { section_id: section.id })
+						}
+						saveNote(n)
+					}}
+<!-- 					onPointerDown={(e) => e.stopPropagation()}
+					className="border p-3" -->
 				>
 				<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38" fill="none">
 				  <path d="M11.0854 6.83698C9.59373 6.04573 7.8467 7.31745 8.13967 8.97898L12.1326 31.624C12.4664 33.5172 15.0027 33.9266 15.915 32.2338L20.2492 24.1939C20.4091 23.8976 20.6341 23.6413 20.9073 23.4443C21.1804 23.2473 21.4946 23.1147 21.8263 23.0565L30.9488 21.448C32.8499 21.1127 33.2523 18.5599 31.5449 17.6584L11.0854 6.83698Z" fill="black"/>
@@ -159,9 +249,7 @@ const Canvas = () => {
 
 				
 				<button
-					// Arrow Icon
-					// XXX: change coords of new note to not be 0, 0 
-					onClick={() => setAddMode("ACTIVE")}
+					onClick={() => setAddArrowMode("ACTIVE")}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="icon"
 				>
@@ -186,6 +274,13 @@ const Canvas = () => {
 				    </clipPath>
 				  </defs>
 				</svg>
+				</button>
+				<button
+					onClick={() => { setAddSectionMode("ACTIVE") }}
+					onPointerDown={(e) => e.stopPropagation()}
+					className="border p-3"
+				>
+					Draw Section
 				</button>
 			</div>
 
