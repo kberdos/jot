@@ -25,16 +25,17 @@ export default function Home() {
 			>
 				{user ?
 					<>
-						<div>
+						{/* <div>
 							{`Hello, ${user.email}`}
-						</div>
+						</div> */}
 						<div className="flex flex-col">
-							<button onClick={logout}>
+							{/* <button onClick={logout}>
 								Sign Out
-							</button>
-							<button onClick={viewBoards}>
+							</button> */}
+
+							{/* <button onClick={viewBoards}>
 								Your Boards
-							</button>
+							</button> */}
 						</div>
 					</>
 					:

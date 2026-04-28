@@ -403,7 +403,7 @@ body {
 /* hidden by default */
 .note-hover-menu {
   position: absolute;
-  left: 45px;
+  left: 40px;
   top: 50%;
   transform: translateY(-50%);
   

@@ -101,7 +101,7 @@ const Canvas = () => {
 			>
 				Reset View
 			</button>
-
+{/* 
 			<div className="absolute top-10 left-1/2 -translate-x-1/2 "
 				onPointerDown={(e) => e.stopPropagation()}
 			>
@@ -117,7 +117,7 @@ const Canvas = () => {
 						</>
 					}
 				</div>
-			</div>
+			</div> */}
 
 			<div
 				className="toolbar"
