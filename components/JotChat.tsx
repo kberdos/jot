@@ -11,7 +11,7 @@ export default function JotChat() {
 	};
 
 	useEffect(() => {
-		getPrompt()
+		// getPrompt()
 	}, [])
 	return (
 		<>

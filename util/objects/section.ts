@@ -28,7 +28,7 @@ interface SectionStore {
 	sections: Section[];
 	updateSection: (id: string, changes: Partial<Section>) => void;
 	loadSections: (board_id: string) => Promise<void>;
-	createSection: (x: number, y: number, board_id: string, user_id: string) => Section;
+	createSection: (section: Section) => Section;
 	addSection: (section: Section) => void;
 	deleteSection: (id: string) => void;
 	// returns IDs of notes whose bounding boxes overlap with the section
@@ -86,17 +86,8 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 		}))
 	},
 
-	createSection: (x, y, board_id, user_id) => {
-		const section: Section = {
-			id: crypto.randomUUID(),
-			x,
-			y,
-			width: DEFAULT_SECTION_WIDTH,
-			height: DEFAULT_SECTION_HEIGHT,
-			color: DEFAULT_SECTION_COLOR,
-			board_id,
-			author_id: user_id,
-		}
+	createSection: (section: Section) => {
+		section.id = crypto.randomUUID()
 		set(state => ({
 			sections: [...state.sections, section],
 		}))

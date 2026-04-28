@@ -9,8 +9,8 @@ import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
-import { GhostSection, useSectionStore } from "@/util/objects/section"
-import { GhostSectionComponent } from "./Section"
+import { GhostSection, Section, useSectionStore } from "@/util/objects/section"
+import { GhostSectionComponent, SectionComponent } from "./Section"
 import { useEffect } from "react"
 
 const ZOOM_MIN = 0.5
@@ -20,9 +20,10 @@ const ZOOM_MAX = 3
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, createNote } = useNoteStore()
+	const { sections } = useSectionStore()
 	const { board, renameBoard } = useBoardStore()
 	const { setAddArrowMode, setGhostArrow } = useArrowStore()
-	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection } = useSectionStore()
+	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection, createSection } = useSectionStore()
 
 	const { user } = useAuthStore()
 
@@ -54,6 +55,29 @@ const Canvas = () => {
 			}
 			setGhostSection(newGhostSection)
 			setAddSectionMode("ADDING")
+		} else if (addSectionMode === "ADDING") {
+			// coords.x, coords.y
+			const coords = toCamera(e, camera)
+			// ghostSeciton.x, .y have coordinates
+			//
+			const x = Math.min(ghostSection!.start_x, coords.x)
+			const y = Math.min(ghostSection!.start_y, coords.y)
+			const width = Math.abs(coords.x - ghostSection!.start_x)
+			const height = Math.abs(coords.y - ghostSection!.start_y)
+
+			const section: Section = {
+				id: "",
+				board_id: board!.id,
+				author_id: user!.id,
+				color: "white",
+				x,
+				y,
+				width,
+				height,
+			}
+			setGhostSection(undefined)
+			setAddSectionMode("NONE")
+			createSection(section)
 		}
 		e.currentTarget.setPointerCapture(e.pointerId)
 	}
@@ -107,6 +131,9 @@ const Canvas = () => {
 			>
 				{notes.map(note => (
 					<NoteObj key={note.id} note={note} />
+				))}
+				{sections.map(section => (
+					<SectionComponent key={section.id} section={section} />
 				))}
 				<ArrowLayer />
 				<CollabLayer />
