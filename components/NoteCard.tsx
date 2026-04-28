@@ -54,7 +54,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 					left: x - 9,
 					top: y - 9
 				}}
-				className="z-50 rounded-full bg-red-500 w-5 h-5"
+				className="z-50 rounded-full bg-[var(--blue)] w-5 h-5"
 				onPointerDown={(e) => e.stopPropagation()}
 				onPointerUp={(e) => e.stopPropagation()}
 				onClick={(e) => {
