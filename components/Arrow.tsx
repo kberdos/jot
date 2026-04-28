@@ -4,12 +4,8 @@ import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
 import { useEffect, useState } from "react";
 import { useNoteStore } from "@/util/objects/note";
 import { getNoteCoords } from "@/util/noteCoordinates";
-import { useCameraStore } from "@/util/objects/camera";
-
-export interface Coordinate {
-	x: number;
-	y: number;
-}
+import { Coordinate, useCameraStore } from "@/util/objects/camera";
+import { toCamera } from "@/util/pointerfunctions";
 
 const ArrowPath = (props: { start: Coordinate, end: Coordinate }) => {
 	const padding = 20
@@ -46,10 +42,7 @@ function GhostArrowComponent(props: { ghost: GhostArrow }) {
 
 	useEffect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
-			setEnd({
-				x: (e.clientX - camera.x) / camera.zoom,
-				y: (e.clientY - camera.y) / camera.zoom,
-			})
+			setEnd(toCamera(e, camera))
 		}
 		window.addEventListener('mousemove', handleMouseMove)
 		return () => window.removeEventListener('mousemove', handleMouseMove)
@@ -60,7 +53,7 @@ function GhostArrowComponent(props: { ghost: GhostArrow }) {
 
 export function ArrowLayer() {
 	const arrows = useArrowStore(state => state.arrows)
-	const ghost = useArrowStore(state => state.ghost)
+	const ghost = useArrowStore(state => state.ghostArrow)
 
 	return (
 		<svg

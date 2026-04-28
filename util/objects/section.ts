@@ -17,6 +17,13 @@ export interface Section {
 	author_id: string;
 }
 
+export interface GhostSection {
+	start_x: number;
+	start_y: number;
+}
+
+export type AddSectionMode = "NONE" | "ACTIVE" | "ADDING"
+
 interface SectionStore {
 	sections: Section[];
 	updateSection: (id: string, changes: Partial<Section>) => void;
@@ -24,10 +31,15 @@ interface SectionStore {
 	createSection: (x: number, y: number, board_id: string, user_id: string) => Section;
 	addSection: (section: Section) => void;
 	deleteSection: (id: string) => void;
-	// Returns IDs of notes whose bounding boxes overlap with the section
+	// returns IDs of notes whose bounding boxes overlap with the section
 	getNotesInSection: (sectionId: string) => Note[];
+	addSectionMode: AddSectionMode;
+	setAddSectionMode: (val: AddSectionMode) => void;
+	ghostSection?: GhostSection
+	setGhostSection: (ghost?: GhostSection) => void;
 }
 
+// save section to database
 export async function saveSection(section: Section) {
 	console.log("saving section to board: ", section.board_id)
 	const { error } = await supabase
@@ -109,4 +121,16 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 		const notes = useNoteStore.getState().notes
 		return notes.filter(note => noteOverlapsSection(note, section))
 	},
+	addSectionMode: "NONE",
+	setAddSectionMode: (val: AddSectionMode) => {
+		set(_ => ({
+			addSectionMode: val,
+		}))
+	},
+	ghostSection: undefined,
+	setGhostSection: (ghost?: GhostSection) => {
+		set(_ => ({
+			ghostSection: ghost,
+		}))
+	}
 }))

@@ -15,28 +15,28 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
-	const { createArrow, addMode, setAddMode, setGhost, ghost } = useArrowStore()
+	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow } = useArrowStore()
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
-		if (addMode === "ACTIVE") {
-			const newGhost: GhostArrow = {
+		if (addArrowMode === "ACTIVE") {
+			const newGhostArrow: GhostArrow = {
 				start_note_id: note.id,
 				start_note_side: noteSide,
 			}
-			setGhost(newGhost)
-			setAddMode("ADDING")
+			setGhostArrow(newGhostArrow)
+			setAddArrowMode("ADDING")
 		} else {
 			const arrow: Arrow = {
 				id: "",
 				board_id: board!.id,
 				author_id: user!.id,
-				start_note_id: ghost!.start_note_id,
-				start_note_side: ghost!.start_note_side,
+				start_note_id: ghostArrow!.start_note_id,
+				start_note_side: ghostArrow!.start_note_side,
 				end_note_id: note.id,
 				end_note_side: noteSide,
 			}
-			setGhost(undefined)
-			setAddMode("NONE")
+			setGhostArrow(undefined)
+			setAddArrowMode("NONE")
 			createArrow(arrow)
 		}
 	}
@@ -45,6 +45,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 		const { x, y } = getNodeOffsets(note, props.noteSide)
 
 		return (
+			// XXX: this placement is really sus lol
 			<button
 				style={{
 					position: "absolute",
@@ -96,7 +97,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 				height: `${note.height}px`,
 			}}
 			>
-				{addMode !== "NONE" &&
+				{addArrowMode !== "NONE" &&
 					<div className="relative">
 						<ArrowTrigger noteSide="TOP" />
 						<ArrowTrigger noteSide="RIGHT" />

@@ -1,4 +1,4 @@
-import { Coordinate } from "@/components/Arrow"
+import { Coordinate } from "./objects/camera"
 import { Note, NoteSide } from "./objects/note"
 
 export function getNodeOffsets(note: Note, side: NoteSide): Coordinate {

@@ -6,6 +6,10 @@ export interface Camera {
 	zoom: number;
 }
 
+export interface Coordinate {
+	x: number;
+	y: number;
+}
 
 interface CameraStore {
 	camera: Camera;

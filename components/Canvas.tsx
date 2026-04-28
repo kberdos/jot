@@ -2,13 +2,14 @@
 
 import { useCameraStore } from "@/util/objects/camera"
 import { saveNote, useNoteStore } from "@/util/objects/note"
-import { handlePointerDown, handlePointerUp } from "@/util/pointerfunctions"
+import { handlePointerUp, toCamera } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
 import { useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
+import { GhostSection, useSectionStore } from "@/util/objects/section"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -18,11 +19,13 @@ const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
 	const { notes, createNote } = useNoteStore()
 	const { board, renameBoard } = useBoardStore()
-	const { setAddMode } = useArrowStore()
+	const { setAddArrowMode } = useArrowStore()
+	const { addSectionMode, setAddSectionMode, setGhostSection } = useSectionStore()
 
 	const { user } = useAuthStore()
 
 
+	// panning the camera when dragging
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.buttons !== 1) return;
 		setCamera({
@@ -38,6 +41,19 @@ const Canvas = () => {
 			console.log(name)
 			await renameBoard(name)
 		}
+	}
+
+	const handlePointerDown = (e: React.PointerEvent) => {
+		if (addSectionMode === "ACTIVE") {
+			const coords = toCamera(e, camera)
+			const newGhostSection: GhostSection = {
+				start_x: coords.x,
+				start_y: coords.y,
+			}
+			setGhostSection(newGhostSection)
+			setAddSectionMode("ADDING")
+		}
+		e.currentTarget.setPointerCapture(e.pointerId)
 	}
 
 	return (
@@ -131,11 +147,18 @@ const Canvas = () => {
 				</button>
 				<button
 					// XXX: change coords of new note to not be 0, 0 
-					onClick={() => setAddMode("ACTIVE")}
+					onClick={() => setAddArrowMode("ACTIVE")}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="border p-3"
 				>
 					Draw Arrow
+				</button>
+				<button
+					onClick={() => { setAddSectionMode("ACTIVE") }}
+					onPointerDown={(e) => e.stopPropagation()}
+					className="border p-3"
+				>
+					Draw Section
 				</button>
 			</div>
 		</div >
