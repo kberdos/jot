@@ -2,7 +2,7 @@
 
 import { useCameraStore } from "@/util/objects/camera"
 import { saveNote, useNoteStore } from "@/util/objects/note"
-import { handlePointerUp, toCamera } from "@/util/pointerfunctions"
+import { toCamera } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
@@ -13,11 +13,34 @@ import Link from "next/link";
 
 import { DEFAULT_SECTION_COLOR, GhostSection, noteIsInSection, saveSection, Section, useSectionStore } from "@/util/objects/section"
 import { GhostSectionComponent, SectionComponent } from "./Section"
-import { useEffect } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
 
+type TouchPoint = {
+	x: number
+	y: number
+}
+
+type PinchGesture = {
+	distance: number
+	midpoint: TouchPoint
+	camera: {
+		x: number
+		y: number
+		zoom: number
+	}
+}
+
+const getDistance = (a: TouchPoint, b: TouchPoint) => Math.hypot(a.x - b.x, a.y - b.y)
+
+const getMidpoint = (a: TouchPoint, b: TouchPoint): TouchPoint => ({
+	x: (a.x + b.x) / 2,
+	y: (a.y + b.y) / 2,
+})
+
+const clampZoom = (zoom: number) => Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN))
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
@@ -29,9 +52,66 @@ const Canvas = () => {
 
 	const { user } = useAuthStore()
 
+	const canvasRef = useRef<HTMLDivElement>(null)
+	const cameraRef = useRef(camera)
+	const touchPointers = useRef(new Map<number, TouchPoint>())
+	const pinchGesture = useRef<PinchGesture | null>(null)
+	const gestureStart = useRef<PinchGesture | null>(null)
+
+	cameraRef.current = camera
+
+	const zoomAtPoint = useCallback((
+		point: TouchPoint,
+		newZoom: number,
+		initialCamera = cameraRef.current,
+		initialPoint = point,
+	) => {
+		const zoomRatio = newZoom / initialCamera.zoom
+
+		setCamera({
+			zoom: newZoom,
+			x: point.x - (initialPoint.x - initialCamera.x) * zoomRatio,
+			y: point.y - (initialPoint.y - initialCamera.y) * zoomRatio,
+		})
+	}, [setCamera])
+
+	const startPinchGesture = () => {
+		const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
+
+		if (!firstTouch || !secondTouch) return
+
+		pinchGesture.current = {
+			distance: getDistance(firstTouch, secondTouch),
+			midpoint: getMidpoint(firstTouch, secondTouch),
+			camera,
+		}
+	}
 
 	// panning the camera when dragging
 	const handlePointerMove = (e: React.PointerEvent) => {
+		if (e.pointerType === "touch") {
+			if (!touchPointers.current.has(e.pointerId)) return
+
+			touchPointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+			if (touchPointers.current.size >= 2) {
+				const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
+
+				if (!firstTouch || !secondTouch) return
+				if (!pinchGesture.current) startPinchGesture()
+				if (!pinchGesture.current || pinchGesture.current.distance === 0) return
+
+				const distance = getDistance(firstTouch, secondTouch)
+				const midpoint = getMidpoint(firstTouch, secondTouch)
+				const initial = pinchGesture.current
+				const newZoom = clampZoom(initial.camera.zoom * (distance / initial.distance))
+
+				zoomAtPoint(midpoint, newZoom, initial.camera, initial.midpoint)
+
+				return
+			}
+		}
+
 		if (e.buttons !== 1) return;
 		setCamera({
 			x: camera.x + e.movementX / camera.zoom,
@@ -39,9 +119,24 @@ const Canvas = () => {
 		})
 	}
 
+	const handleCanvasPointerUp = (e: React.PointerEvent) => {
+		if (e.pointerType === "touch") {
+			touchPointers.current.delete(e.pointerId)
+			pinchGesture.current = null
+
+			if (touchPointers.current.size >= 2) {
+				startPinchGesture()
+			}
+		}
+
+		if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+			e.currentTarget.releasePointerCapture(e.pointerId)
+		}
+	}
+
 
 	const handleRenameBoard = async () => {
-		let name = prompt("Enter new name")
+		const name = prompt("Enter new name")
 		if (name) {
 			console.log(name)
 			await renameBoard(name)
@@ -50,6 +145,16 @@ const Canvas = () => {
 
 	const handlePointerDown = async (e: React.PointerEvent) => {
 		const target = e.currentTarget
+		if (e.pointerType === "touch") {
+			touchPointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+			if (touchPointers.current.size >= 2) {
+				startPinchGesture()
+				target.setPointerCapture(e.pointerId)
+				return
+			}
+		}
+
 		if (addSectionMode === "ACTIVE") {
 			const coords = toCamera(e, camera)
 			const newGhostSection: GhostSection = {
@@ -103,6 +208,71 @@ const Canvas = () => {
 	}
 
 	useEffect(() => {
+		const canvas = canvasRef.current
+		if (!canvas) return
+
+		const handleWheel = (e: WheelEvent) => {
+			if (!e.ctrlKey) return
+
+			e.preventDefault()
+			const currentCamera = cameraRef.current
+			const newZoom = clampZoom(currentCamera.zoom * Math.exp(-e.deltaY * 0.01))
+
+			zoomAtPoint({ x: e.clientX, y: e.clientY }, newZoom, currentCamera)
+		}
+
+		const getGesturePoint = (e: Event): TouchPoint => {
+			const gestureEvent = e as Event & { clientX?: number; clientY?: number }
+			const rect = canvas.getBoundingClientRect()
+
+			return {
+				x: gestureEvent.clientX ?? rect.left + rect.width / 2,
+				y: gestureEvent.clientY ?? rect.top + rect.height / 2,
+			}
+		}
+
+		const handleGestureStart = (e: Event) => {
+			e.preventDefault()
+
+			gestureStart.current = {
+				distance: 1,
+				midpoint: getGesturePoint(e),
+				camera: cameraRef.current,
+			}
+		}
+
+		const handleGestureChange = (e: Event) => {
+			e.preventDefault()
+
+			const gestureEvent = e as Event & { scale?: number }
+			const initial = gestureStart.current
+			if (!initial || !gestureEvent.scale) return
+
+			const midpoint = getGesturePoint(e)
+			const newZoom = clampZoom(initial.camera.zoom * gestureEvent.scale)
+
+			zoomAtPoint(midpoint, newZoom, initial.camera, initial.midpoint)
+		}
+
+		const handleGestureEnd = (e: Event) => {
+			e.preventDefault()
+			gestureStart.current = null
+		}
+
+		canvas.addEventListener("wheel", handleWheel, { passive: false })
+		canvas.addEventListener("gesturestart", handleGestureStart, { passive: false })
+		canvas.addEventListener("gesturechange", handleGestureChange, { passive: false })
+		canvas.addEventListener("gestureend", handleGestureEnd, { passive: false })
+
+		return () => {
+			canvas.removeEventListener("wheel", handleWheel)
+			canvas.removeEventListener("gesturestart", handleGestureStart)
+			canvas.removeEventListener("gesturechange", handleGestureChange)
+			canvas.removeEventListener("gestureend", handleGestureEnd)
+		}
+	}, [zoomAtPoint])
+
+	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			console.log("Key pressed:", e.key);
 
@@ -116,26 +286,18 @@ const Canvas = () => {
 
 	return (
 		<div className="w-full h-full overflow-hidden"
+			ref={canvasRef}
 			style={{
 				backgroundColor: "var(--light-grey)",
 				backgroundImage: "radial-gradient(circle, #888, 1px, transparent 1px)",
 				backgroundSize: `${30 * camera.zoom}px ${30 * camera.zoom}px`,
 				backgroundPosition: `${camera.x % (30 * camera.zoom)}px ${camera.y % (30 * camera.zoom)}px`,
-				backgroundColor: "#F5F5F5",
+				touchAction: "none",
 			}}
 			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
-			onPointerUp={handlePointerUp}
-			onWheel={(e) => {
-				const zoomFactor = e.deltaY * 0.001
-				const newZoom = Math.min(ZOOM_MAX, Math.max(camera.zoom - zoomFactor, ZOOM_MIN))
-
-				setCamera({
-					zoom: newZoom,
-					x: e.clientX - (e.clientX - camera.x) * (newZoom / camera.zoom),
-					y: e.clientY - (e.clientY - camera.y) * (newZoom / camera.zoom),
-				})
-			}}
+			onPointerUp={handleCanvasPointerUp}
+			onPointerCancel={handleCanvasPointerUp}
 		>
 			<div style={{
 				transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,

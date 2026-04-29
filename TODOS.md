@@ -18,7 +18,6 @@
 - IMPORTANT: add last modified to all objects 
 - order boards in your boards page by time_modified
 - thumbnail?
-- override the pinch zoom thing 
 
 - FIX: if you zoom in / out while drawing section it screws up the selection
 - remove all next boilerplate stuff
@@ -28,4 +27,5 @@
 - tool calling is pretty bad + slow
 
 - first priority: zoom in thing
+- override the pinch zoom thing 
 - second: rename + resize sections
