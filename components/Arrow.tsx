@@ -51,8 +51,11 @@ function ArrowComponent(props: { arrow: Arrow }) {
 	const setActiveNote = useNoteStore(state => state.setActiveNote)
 	const activeArrowId = useArrowStore(state => state.activeArrowId)
 	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
-	const start = getNoteCoords(startNote!, props.arrow.start_note_side)
-	const end = getNoteCoords(endNote!, props.arrow.end_note_side)
+
+	if (!startNote || !endNote) return null
+
+	const start = getNoteCoords(startNote, props.arrow.start_note_side)
+	const end = getNoteCoords(endNote, props.arrow.end_note_side)
 	return (
 		<ArrowPath
 			start={start}
@@ -70,8 +73,8 @@ function ArrowComponent(props: { arrow: Arrow }) {
 function GhostArrowComponent(props: { ghost: GhostArrow }) {
 	const { camera } = useCameraStore()
 	const startNote = useNoteStore(state => state.notes.find(n => n.id === props.ghost.start_note_id))
-	const start = getNoteCoords(startNote!, props.ghost.start_note_side)
-	const [end, setEnd] = useState<Coordinate>({ x: start.x, y: start.y })
+	const start = startNote ? getNoteCoords(startNote, props.ghost.start_note_side) : undefined
+	const [end, setEnd] = useState<Coordinate>({ x: start?.x ?? 0, y: start?.y ?? 0 })
 
 	useEffect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
@@ -80,6 +83,8 @@ function GhostArrowComponent(props: { ghost: GhostArrow }) {
 		window.addEventListener('mousemove', handleMouseMove)
 		return () => window.removeEventListener('mousemove', handleMouseMove)
 	}, [])
+
+	if (!start) return null
 
 	return <ArrowPath start={start} end={end} />
 }

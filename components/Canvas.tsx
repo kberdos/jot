@@ -7,7 +7,7 @@ import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
-import { deleteSavedArrow, useArrowStore } from "@/util/objects/arrow"
+import { deleteSavedArrow, deleteSavedArrowsForNote, useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
 import Link from "next/link";
 
@@ -47,7 +47,7 @@ const Canvas = () => {
 	const { notes, createNote, updateNote, activeNoteId, setActiveNote, deleteNote } = useNoteStore()
 	const { sections } = useSectionStore()
 	const { board, renameBoard } = useBoardStore()
-	const { setAddArrowMode, setGhostArrow, activeArrowId, setActiveArrow, deleteArrow } = useArrowStore()
+	const { setAddArrowMode, setGhostArrow, activeArrowId, setActiveArrow, deleteArrow, deleteArrowsForNote } = useArrowStore()
 	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection, createSection } = useSectionStore()
 
 	const { user } = useAuthStore()
@@ -58,6 +58,7 @@ const Canvas = () => {
 	const activeArrowIdRef = useRef(activeArrowId)
 	const deleteNoteRef = useRef(deleteNote)
 	const deleteArrowRef = useRef(deleteArrow)
+	const deleteArrowsForNoteRef = useRef(deleteArrowsForNote)
 	const touchPointers = useRef(new Map<number, TouchPoint>())
 	const pinchGesture = useRef<PinchGesture | null>(null)
 	const gestureStart = useRef<PinchGesture | null>(null)
@@ -67,6 +68,7 @@ const Canvas = () => {
 	activeArrowIdRef.current = activeArrowId
 	deleteNoteRef.current = deleteNote
 	deleteArrowRef.current = deleteArrow
+	deleteArrowsForNoteRef.current = deleteArrowsForNote
 
 	const zoomAtPoint = useCallback((
 		point: TouchPoint,
@@ -310,7 +312,11 @@ const Canvas = () => {
 
 				e.preventDefault()
 				if (noteId) {
+					deleteArrowsForNoteRef.current(noteId)
 					deleteNoteRef.current(noteId)
+					deleteSavedArrowsForNote(noteId).catch(error => {
+						console.error("Failed to delete arrows for note:", error)
+					})
 					deleteSavedNote(noteId).catch(error => {
 						console.error("Failed to delete note:", error)
 					})
