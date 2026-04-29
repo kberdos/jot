@@ -7,7 +7,7 @@ import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import { ArrowLayer } from "./Arrow"
-import { useArrowStore } from "@/util/objects/arrow"
+import { deleteSavedArrow, useArrowStore } from "@/util/objects/arrow"
 import CollabLayer from "./Collab"
 import Link from "next/link";
 
@@ -47,7 +47,7 @@ const Canvas = () => {
 	const { notes, createNote, updateNote, activeNoteId, setActiveNote, deleteNote } = useNoteStore()
 	const { sections } = useSectionStore()
 	const { board, renameBoard } = useBoardStore()
-	const { setAddArrowMode, setGhostArrow } = useArrowStore()
+	const { setAddArrowMode, setGhostArrow, activeArrowId, setActiveArrow, deleteArrow } = useArrowStore()
 	const { addSectionMode, setAddSectionMode, ghostSection, setGhostSection, createSection } = useSectionStore()
 
 	const { user } = useAuthStore()
@@ -55,14 +55,18 @@ const Canvas = () => {
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
+	const activeArrowIdRef = useRef(activeArrowId)
 	const deleteNoteRef = useRef(deleteNote)
+	const deleteArrowRef = useRef(deleteArrow)
 	const touchPointers = useRef(new Map<number, TouchPoint>())
 	const pinchGesture = useRef<PinchGesture | null>(null)
 	const gestureStart = useRef<PinchGesture | null>(null)
 
 	cameraRef.current = camera
 	activeNoteIdRef.current = activeNoteId
+	activeArrowIdRef.current = activeArrowId
 	deleteNoteRef.current = deleteNote
+	deleteArrowRef.current = deleteArrow
 
 	const zoomAtPoint = useCallback((
 		point: TouchPoint,
@@ -143,6 +147,7 @@ const Canvas = () => {
 	const handlePointerDown = async (e: React.PointerEvent) => {
 		const target = e.currentTarget
 		setActiveNote(null)
+		setActiveArrow(null)
 
 		if (e.pointerType === "touch") {
 			touchPointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -300,13 +305,21 @@ const Canvas = () => {
 				if (isEditingText) return
 
 				const noteId = activeNoteIdRef.current
-				if (!noteId) return
+				const arrowId = activeArrowIdRef.current
+				if (!noteId && !arrowId) return
 
 				e.preventDefault()
-				deleteNoteRef.current(noteId)
-				deleteSavedNote(noteId).catch(error => {
-					console.error("Failed to delete note:", error)
-				})
+				if (noteId) {
+					deleteNoteRef.current(noteId)
+					deleteSavedNote(noteId).catch(error => {
+						console.error("Failed to delete note:", error)
+					})
+				} else if (arrowId) {
+					deleteArrowRef.current(arrowId)
+					deleteSavedArrow(arrowId).catch(error => {
+						console.error("Failed to delete arrow:", error)
+					})
+				}
 			}
 		};
 

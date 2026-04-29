@@ -7,7 +7,7 @@ import { getNoteCoords } from "@/util/noteCoordinates";
 import { Coordinate, useCameraStore } from "@/util/objects/camera";
 import { toCamera } from "@/util/pointerfunctions";
 
-const ArrowPath = (props: { start: Coordinate, end: Coordinate }) => {
+const ArrowPath = (props: { start: Coordinate, end: Coordinate, isActive?: boolean, onPointerDown?: (e: React.PointerEvent<SVGGElement>) => void }) => {
 	const padding = 20
 	const arrowArr = getArrow(props.start.x, props.start.y, props.end.x, props.end.y, {
 		stretch: 0,
@@ -15,8 +15,27 @@ const ArrowPath = (props: { start: Coordinate, end: Coordinate }) => {
 	})
 	const [sx, sy, cx, cy, ex, ey, ae] = arrowArr
 	const endAngleAsDegrees = ae * (180 / Math.PI)
+	const color = props.isActive ? "var(--blue)" : "#000"
 	return (
-		<g stroke="#000" fill="#000" strokeWidth={3}>
+		<g
+			stroke={color}
+			fill={color}
+			strokeWidth={props.isActive ? 4 : 3}
+			style={{
+				cursor: props.onPointerDown ? "pointer" : "default",
+				pointerEvents: props.onPointerDown ? "auto" : "none",
+			}}
+			onPointerDown={props.onPointerDown}
+		>
+			{props.onPointerDown &&
+				<path
+					d={`M${sx},${sy} Q${cx},${cy} ${ex},${ey}`}
+					fill="none"
+					stroke="transparent"
+					strokeWidth={18}
+					pointerEvents="stroke"
+				/>
+			}
 			<path d={`M${sx},${sy} Q${cx},${cy} ${ex},${ey}`} fill="none" />
 			<polygon
 				points="0,-6 12,0, 0,6"
@@ -29,9 +48,23 @@ const ArrowPath = (props: { start: Coordinate, end: Coordinate }) => {
 function ArrowComponent(props: { arrow: Arrow }) {
 	const startNote = useNoteStore(state => state.notes.find(n => n.id === props.arrow.start_note_id))
 	const endNote = useNoteStore(state => state.notes.find(n => n.id === props.arrow.end_note_id))
+	const setActiveNote = useNoteStore(state => state.setActiveNote)
+	const activeArrowId = useArrowStore(state => state.activeArrowId)
+	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
 	const start = getNoteCoords(startNote!, props.arrow.start_note_side)
 	const end = getNoteCoords(endNote!, props.arrow.end_note_side)
-	return <ArrowPath start={start} end={end} />
+	return (
+		<ArrowPath
+			start={start}
+			end={end}
+			isActive={activeArrowId === props.arrow.id}
+			onPointerDown={(e) => {
+				e.stopPropagation()
+				setActiveNote(null)
+				setActiveArrow(props.arrow.id)
+			}}
+		/>
+	)
 }
 
 function GhostArrowComponent(props: { ghost: GhostArrow }) {

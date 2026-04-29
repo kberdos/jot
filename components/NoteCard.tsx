@@ -18,7 +18,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
-	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow } = useArrowStore()
+	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
 	const { sections } = useSectionStore()
 	const isActive = activeNoteId === note.id
 
@@ -96,6 +96,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 			onPointerDown={(e) => {
 				e.stopPropagation()
 				setActiveNote(note.id)
+				setActiveArrow(null)
 				handlePointerDown(e)
 			}}
 			onPointerMove={handlePointerMove}

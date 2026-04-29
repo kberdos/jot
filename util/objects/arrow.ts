@@ -25,8 +25,11 @@ export type AddArrowMode = "NONE" | "ACTIVE" | "ADDING"
 
 interface ArrowStore {
 	arrows: Arrow[];
+	activeArrowId: string | null;
 	createArrow: (arrow: Arrow) => void;
 	addArrow: (arrow: Arrow) => void
+	deleteArrow: (id: string) => void
+	setActiveArrow: (id: string | null) => void
 	updateArrow: (id: string, changes: Partial<Arrow>) => void
 	loadArrows: (board_id: string) => Promise<void>;
 	ghostArrow?: GhostArrow;
@@ -51,11 +54,32 @@ export async function saveArrow(arrow: Arrow) {
 	if (error) throw error
 }
 
+export async function deleteSavedArrow(id: string) {
+	const { error } = await supabase
+		.from("arrows")
+		.delete()
+		.eq("id", id)
+
+	if (error) throw error
+}
+
 export const useArrowStore = create<ArrowStore>((set, get) => ({
 	arrows: [],
+	activeArrowId: null,
 	updateArrow: (id, changes) => {
 		set(state => ({
 			arrows: state.arrows.map(a => a.id === id ? { ...a, ...changes } : a)
+		}))
+	},
+	setActiveArrow: (id) => {
+		set(_ => ({
+			activeArrowId: id,
+		}))
+	},
+	deleteArrow: (id) => {
+		set(state => ({
+			arrows: state.arrows.filter(a => a.id !== id),
+			activeArrowId: state.activeArrowId === id ? null : state.activeArrowId,
 		}))
 	},
 	addArrow: (arrow: Arrow) => {
