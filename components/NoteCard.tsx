@@ -12,12 +12,15 @@ import { handlePointerDown } from "@/util/pointerfunctions"
 
 const NoteObj = ({ note }: { note: Note }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
+	const activeNoteId = useNoteStore(state => state.activeNoteId)
+	const setActiveNote = useNoteStore(state => state.setActiveNote)
 	const camera = useCameraStore(state => state.camera)
 
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
-	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow } = useArrowStore()
+	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
 	const { sections } = useSectionStore()
+	const isActive = activeNoteId === note.id
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
 		if (addArrowMode === "ACTIVE") {
@@ -59,6 +62,8 @@ const NoteObj = ({ note }: { note: Note }) => {
 				onPointerUp={(e) => e.stopPropagation()}
 				onClick={(e) => {
 					e.stopPropagation()
+					setActiveNote(null)
+					setActiveArrow(null)
 					handleGhostArrow(props.noteSide)
 				}}
 			/>
@@ -92,6 +97,8 @@ const NoteObj = ({ note }: { note: Note }) => {
 		}}
 			onPointerDown={(e) => {
 				e.stopPropagation()
+				setActiveNote(note.id)
+				setActiveArrow(null)
 				handlePointerDown(e)
 			}}
 			onPointerMove={handlePointerMove}
@@ -99,8 +106,10 @@ const NoteObj = ({ note }: { note: Note }) => {
 		>
 			<div style={{
 				backgroundColor: note.color,
+				border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
 				width: `${note.width}px`,
 				height: `${note.height}px`,
+				boxSizing: "border-box",
 			}}
 			>
 				{addArrowMode !== "NONE" &&

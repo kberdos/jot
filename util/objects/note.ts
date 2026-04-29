@@ -22,8 +22,11 @@ export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 
 interface NoteStore {
 	notes: Note[];
+	activeNoteId: string | null;
 	// TODO: get note 
 	updateNote: (id: string, changes: Partial<Note>) => void;
+	setActiveNote: (id: string | null) => void;
+	deleteNote: (id: string) => void;
 	loadNotes: (board_id: string) => Promise<void>;
 	createNote: (x: number, y: number, board_id: string, user_id: string) => Note;
 	addNote: (note: Note) => void;
@@ -49,11 +52,32 @@ export async function saveNote(note: Note) {
 	if (error) throw error
 }
 
+export async function deleteSavedNote(id: string) {
+	const { error } = await supabase
+		.from("notes")
+		.delete()
+		.eq("id", id)
+
+	if (error) throw error
+}
+
 export const useNoteStore = create<NoteStore>((set, get) => ({
 	notes: [],
+	activeNoteId: null,
 	updateNote: (id, changes) => {
 		set(state => ({
 			notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
+		}))
+	},
+	setActiveNote: (id) => {
+		set(_ => ({
+			activeNoteId: id,
+		}))
+	},
+	deleteNote: (id) => {
+		set(state => ({
+			notes: state.notes.filter(n => n.id !== id),
+			activeNoteId: state.activeNoteId === id ? null : state.activeNoteId,
 		}))
 	},
 	loadNotes: async (board_id: string) => {
