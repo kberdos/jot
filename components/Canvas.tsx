@@ -1,7 +1,7 @@
 "use client"
 
 import { useCameraStore } from "@/util/objects/camera"
-import { saveNote, useNoteStore } from "@/util/objects/note"
+import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note"
 import { toCamera } from "@/util/pointerfunctions"
 import NoteObj from "./NoteCard"
 import { useBoardStore } from "@/util/objects/board"
@@ -44,7 +44,7 @@ const clampZoom = (zoom: number) => Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN))
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
-	const { notes, createNote, updateNote } = useNoteStore()
+	const { notes, createNote, updateNote, activeNoteId, setActiveNote, deleteNote } = useNoteStore()
 	const { sections } = useSectionStore()
 	const { board, renameBoard } = useBoardStore()
 	const { setAddArrowMode, setGhostArrow } = useArrowStore()
@@ -54,11 +54,15 @@ const Canvas = () => {
 
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
+	const activeNoteIdRef = useRef(activeNoteId)
+	const deleteNoteRef = useRef(deleteNote)
 	const touchPointers = useRef(new Map<number, TouchPoint>())
 	const pinchGesture = useRef<PinchGesture | null>(null)
 	const gestureStart = useRef<PinchGesture | null>(null)
 
 	cameraRef.current = camera
+	activeNoteIdRef.current = activeNoteId
+	deleteNoteRef.current = deleteNote
 
 	const zoomAtPoint = useCallback((
 		point: TouchPoint,
@@ -138,6 +142,8 @@ const Canvas = () => {
 
 	const handlePointerDown = async (e: React.PointerEvent) => {
 		const target = e.currentTarget
+		setActiveNote(null)
+
 		if (e.pointerType === "touch") {
 			touchPointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
@@ -284,6 +290,24 @@ const Canvas = () => {
 			console.log("Key pressed:", e.key);
 
 			if (e.key === "Escape") { handleEscape() }
+
+			if (e.key === "Delete" || e.key === "Backspace") {
+				const target = e.target
+				const isEditingText =
+					target instanceof HTMLElement &&
+					(target.closest("input, textarea") || target.isContentEditable)
+
+				if (isEditingText) return
+
+				const noteId = activeNoteIdRef.current
+				if (!noteId) return
+
+				e.preventDefault()
+				deleteNoteRef.current(noteId)
+				deleteSavedNote(noteId).catch(error => {
+					console.error("Failed to delete note:", error)
+				})
+			}
 		};
 
 		window.addEventListener("keydown", handleKeyDown);
