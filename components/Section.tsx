@@ -5,16 +5,20 @@ import { GhostSection, noteIsInSection, saveSection, Section, useSectionStore } 
 import { toCamera } from "@/util/pointerfunctions"
 import { useEffect, useRef, useState } from "react"
 import { saveNote, useNoteStore } from "@/util/objects/note"
+import { useArrowStore } from "@/util/objects/arrow"
 
 
 
 export const SectionComponent = ({ section }: { section: Section }) => {
 	const camera = useCameraStore(state => state.camera)
 	const { updateSection, getNotesInSection } = useSectionStore()
-	const { notes, updateNote } = useNoteStore()
+	const { notes, updateNote, setActiveNote } = useNoteStore()
+	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
 
 	const handlePointerDown = (e: React.PointerEvent) => {
 		e.stopPropagation()
+		setActiveNote(null)
+		setActiveArrow(null)
 		e.currentTarget.setPointerCapture(e.pointerId)
 	}
 

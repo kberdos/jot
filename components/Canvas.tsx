@@ -85,6 +85,11 @@ const Canvas = () => {
 		})
 	}, [setCamera])
 
+	const clearSelections = useCallback(() => {
+		setActiveNote(null)
+		setActiveArrow(null)
+	}, [setActiveArrow, setActiveNote])
+
 	const startPinchGesture = () => {
 		const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
 
@@ -148,8 +153,7 @@ const Canvas = () => {
 
 	const handlePointerDown = async (e: React.PointerEvent) => {
 		const target = e.currentTarget
-		setActiveNote(null)
-		setActiveArrow(null)
+		clearSelections()
 
 		if (e.pointerType === "touch") {
 			touchPointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -207,6 +211,7 @@ const Canvas = () => {
 
 	// cancel out of all selections, drawings, etc.
 	const handleEscape = () => {
+		clearSelections()
 		setAddArrowMode("NONE")
 		setGhostArrow(undefined)
 		setAddSectionMode("NONE")
@@ -420,6 +425,7 @@ const Canvas = () => {
 					onPointerDown={(e) => e.stopPropagation()}
 					// XXX: change coords of new note to not be 0, 0 
 					onClick={() => {
+						clearSelections()
 						const n = createNote(0, 0, board!.id, user!.id)
 						const section = sections.find(s => noteIsInSection(n, s))
 						if (section) {
@@ -439,6 +445,7 @@ const Canvas = () => {
 						// Note icon
 						// XXX: change coords of new note to not be 0, 0 
 						onClick={() => {
+							clearSelections()
 							const n = createNote(0, 0, board!.id, user!.id)
 							saveNote(n)
 						}}
@@ -459,7 +466,10 @@ const Canvas = () => {
 
 
 				<button
-					onClick={() => setAddArrowMode("ACTIVE")}
+					onClick={() => {
+						clearSelections()
+						setAddArrowMode("ACTIVE")
+					}}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="icon"
 				>
@@ -486,7 +496,10 @@ const Canvas = () => {
 					</svg>
 				</button>
 				<button
-					onClick={() => { setAddSectionMode("ACTIVE") }}
+					onClick={() => {
+						clearSelections()
+						setAddSectionMode("ACTIVE")
+					}}
 					onPointerDown={(e) => e.stopPropagation()}
 					className="border p-3"
 				>

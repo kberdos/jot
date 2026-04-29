@@ -62,6 +62,8 @@ const NoteObj = ({ note }: { note: Note }) => {
 				onPointerUp={(e) => e.stopPropagation()}
 				onClick={(e) => {
 					e.stopPropagation()
+					setActiveNote(null)
+					setActiveArrow(null)
 					handleGhostArrow(props.noteSide)
 				}}
 			/>
