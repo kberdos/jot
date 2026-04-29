@@ -87,7 +87,6 @@ const Canvas = () => {
 		}
 	}
 
-	// panning the camera when dragging
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.pointerType === "touch") {
 			if (!touchPointers.current.has(e.pointerId)) return
@@ -111,12 +110,6 @@ const Canvas = () => {
 				return
 			}
 		}
-
-		if (e.buttons !== 1) return;
-		setCamera({
-			x: camera.x + e.movementX / camera.zoom,
-			y: camera.y + e.movementY / camera.zoom,
-		})
 	}
 
 	const handleCanvasPointerUp = (e: React.PointerEvent) => {
@@ -212,10 +205,24 @@ const Canvas = () => {
 		if (!canvas) return
 
 		const handleWheel = (e: WheelEvent) => {
-			if (!e.ctrlKey) return
-
 			e.preventDefault()
 			const currentCamera = cameraRef.current
+
+			if (!e.ctrlKey) {
+				const deltaScale =
+					e.deltaMode === WheelEvent.DOM_DELTA_LINE
+						? 16
+						: e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+							? window.innerHeight
+							: 1
+
+				setCamera({
+					x: currentCamera.x - e.deltaX * deltaScale,
+					y: currentCamera.y - e.deltaY * deltaScale,
+				})
+				return
+			}
+
 			const newZoom = clampZoom(currentCamera.zoom * Math.exp(-e.deltaY * 0.01))
 
 			zoomAtPoint({ x: e.clientX, y: e.clientY }, newZoom, currentCamera)
@@ -270,7 +277,7 @@ const Canvas = () => {
 			canvas.removeEventListener("gesturechange", handleGestureChange)
 			canvas.removeEventListener("gestureend", handleGestureEnd)
 		}
-	}, [zoomAtPoint])
+	}, [setCamera, zoomAtPoint])
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
