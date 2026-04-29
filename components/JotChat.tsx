@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 
 interface Message {
@@ -11,7 +11,34 @@ export default function JotChat() {
 	const [messages, setMessages] = useState<Message[]>([])
 	const [input, setInput] = useState("")
 	const [loading, setLoading] = useState(false)
-	const { board } = useBoardStore()
+	const { board , setIsChatOpen} = useBoardStore()
+
+	const [width, setWidth] = useState(540)
+	const [isResizing, setIsResizing] = useState(false)
+
+	// useEffect(() => {
+	// 	setIsChatOpen(true)
+	// 	return () => setIsChatOpen(false)
+	// }, [])
+
+	useEffect(() => {
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!isResizing) return
+	
+			const newWidth = window.innerWidth - e.clientX
+			setWidth(Math.max(300, Math.min(newWidth, 1200))) // limits
+		}
+	
+		const handleMouseUp = () => setIsResizing(false)
+	
+		window.addEventListener("mousemove", handleMouseMove)
+		window.addEventListener("mouseup", handleMouseUp)
+	
+		return () => {
+			window.removeEventListener("mousemove", handleMouseMove)
+			window.removeEventListener("mouseup", handleMouseUp)
+		}
+	}, [isResizing])
 
 	const sendMessage = async () => {
 		if (!input.trim()) return
@@ -53,9 +80,65 @@ export default function JotChat() {
 	}
 
 	return (
-		<div className="flex flex-col h-full">
-			<div className="font-bold p-3 border-b">JotChat</div>
+		// <div className="flex flex-col h-full border-l border-[var(--grey)]"
+		// 		style={{ width }}
+			
+		// 	>
+		<div
+			className="fixed top-0 right-0 h-screen bg-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] flex flex-col border-l border-[var(--grey)] z-50 relative"
+
+			style={{ width }}
+		>
+				<div
+				onMouseDown={(e) => {
+					e.stopPropagation()
+					setIsResizing(true)
+				}}
+				// className="absolute left-0 top-0 h-full w-3 cursor-col-resize group"
+				className="absolute left-0 top-0 h-full w-4 cursor-col-resize z-50"
+				>
+				</div>
+
+			
+			<div className="flex items-center justify-between px-5 py-4">
+			<div className="nav-logo text-2xl">JotChat</div>
+
+			<button className="text-xxl icon font-bold"
+				onClick={() => setIsChatOpen(false)}
+			>
+				{/* ✕ */}
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="black"
+				strokeWidth="3"
+				strokeLinecap="round"
+			>
+				<line x1="6" y1="6" x2="18" y2="18" />
+				<line x1="18" y1="6" x2="6" y2="18" />
+			</svg>
+			</button>
+			</div>
 			<div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+				
+			{messages.length === 0 && (
+			<div className="text-sm text-black leading-relaxed space-y-3">
+				<p>Hi! I am here to assist you in understanding your Jot board. Some things that I can do include:</p>
+
+				<ul className="list-disc ml-5 space-y-1">
+				<li><b>Find & highlight:</b> search for notes containing or related to a word/topic</li>
+				<li><b>Summarize:</b> get a brief summary of notes containing or related to a word/topic</li>
+				<li><b>Organize:</b> duplicate and group notes containing or related to a word/topic into a new section</li>
+				<li><b>Explore connections:</b> select a note and see how it connects to others</li>
+				</ul>
+
+				<p className="text-grey text-xs">
+				Tip: Click any note and choose “Use in chat” to focus action on that specific note.
+				</p>
+			</div>
+			)}
 				{messages.map((m, i) => (
 					<div key={i} className={`p-2 rounded ${m.role === "user" ? "self-end bg-blue-100" : "self-start bg-gray-100"}`}>
 						{m.parts[0].text}
@@ -63,7 +146,7 @@ export default function JotChat() {
 				))}
 				{loading && <div className="self-start text-gray-400">thinking...</div>}
 			</div>
-			<div className="flex gap-2 p-3 border-t">
+			{/* <div className="flex gap-2 p-3">
 				<input
 					className="flex-1 border rounded p-2"
 					value={input}
@@ -72,6 +155,23 @@ export default function JotChat() {
 					placeholder="Ask about your board..."
 				/>
 				<button className="border rounded px-3" onClick={sendMessage}>Send</button>
+			</div> */}
+			<div className="p-3">
+				<div className="flex items-center bg-[var(--light-grey)] rounded-xl px-3 py-2">
+					<input
+						className="flex-1 bg-transparent outline-none text-sm"
+						value={input}
+						onChange={e => setInput(e.target.value)}
+						onKeyDown={e => e.key === "Enter" && sendMessage()}
+						placeholder="Write a message..."
+					/>
+					<button
+						onClick={sendMessage}
+						className="ml-2 w-8 h-8 flex text-xl font-bold items-center justify-center rounded-full bg-white shadow hover:bg-[var(--grey)]"
+					>
+						↑
+					</button>
+				</div>
 			</div>
 		</div>
 	)

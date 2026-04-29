@@ -3,15 +3,43 @@
 import { login, logout, useAuthStore } from "@/util/auth/auth";
 import { useBoardStore } from "@/util/objects/board";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Board } from "@/util/objects/board";
+import { supabase } from "@/util/supabase/supabase";
+import { User } from "@supabase/supabase-js";
+import Image from "next/image";
+import thumbnail from "../assets/dummy-thumbnail.png";
+
+async function getBoards(user: User): Promise<Board[]> {
+  const { data, error } = await supabase
+    .from("boards")
+    .select("*")
+    .eq("author", user.id)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data as Board[];
+}
 
 export default function Home() {
   const { user } = useAuthStore();
+  const [boards, setBoards] = useState<Board[]>([]);
   const { createBoard } = useBoardStore();
   const router = useRouter();
   const [showSignOut, setShowSignOut] = useState(false);
+  const [activeTab, setActiveTab] = useState<"my" | "shared">("my");
 
   const viewBoards = () => router.push("/boards");
+
+  useEffect(() => {
+    if (!user) return;
+
+    const load = async () => {
+      const b = await getBoards(user);
+      setBoards(b);
+    };
+
+    load();
+  }, [user]);
 
   const handleNewBoard = async () => {
     const name = "New Board";
@@ -77,12 +105,22 @@ export default function Home() {
             <div className="dashboard-actions">
               <div className="left-buttons">
                 <button
-                  className="button grey-button text-xl"
-                  onClick={viewBoards}
+                  className={`button text-xl ${
+                    activeTab === "my" ? "grey-button-active" : "grey-button"
+                  }`}
+                  onClick={() => setActiveTab("my")}
                 >
                   My boards
                 </button>
-                <button className="button grey-button text-xl">
+
+                <button
+                  className={`button text-xl ${
+                    activeTab === "shared"
+                      ? "grey-button-active"
+                      : "grey-button"
+                  }`}
+                  onClick={() => setActiveTab("shared")}
+                >
                   Shared with me
                 </button>
               </div>
@@ -92,6 +130,28 @@ export default function Home() {
               >
                 Create new board
               </button>
+            </div>
+            <div className="boards-grid">
+              {boards.map((b) => (
+                <div key={b.id} className="board-card">
+                  <button
+                    key={b.id}
+                    className="board-card"
+                    onClick={() => router.push(`/boards/${b.id}`)}
+                  >
+                    <div className="board-thumbnail">
+                      <Image
+                        src={thumbnail}
+                        alt={`${b.name} thumbnail`}
+                        className="board-thumbnail-img"
+                      />
+                    </div>
+                    <div className="board-info">
+                      <p className="text-xl">{b.name}</p>
+                    </div>
+                  </button>
+                </div>
+              ))}
             </div>
           </main>
         </div>

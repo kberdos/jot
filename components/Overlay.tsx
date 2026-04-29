@@ -6,10 +6,12 @@ import { login, logout, useAuthStore } from "@/util/auth/auth"
 import Canvas from "./Canvas"
 import { useRouter } from "next/navigation"
 import JotChat from "./JotChat"
+import { useBoardStore } from "@/util/objects/board"
 
 
 export default function Home() {
 	const { user } = useAuthStore()
+	const { isChatOpen } = useBoardStore()
 	const router = useRouter()
 	const viewBoards = () => {
 		router.push("/boards")
@@ -45,9 +47,12 @@ export default function Home() {
 				}
 			</div>
 			<Canvas />
-			{/* <div className="flex-grow w-[540px]">
-				<JotChat />
-			</div > */}
-		</div >
+			{/* {isChatOpen && (
+				<div className="flex-grow w-[540px]">
+					<JotChat />
+				</div>
+			)} */}
+			{isChatOpen && <JotChat />}
+			</div>
 	)
 }

@@ -106,6 +106,11 @@ body {
   color: var(--black);
 }
 
+.grey-button-active {
+  background-color: var(--grey);
+  color: var(--black);
+}
+
 .grey-button:hover {
   background-color: var(--grey);
 }
@@ -208,7 +213,7 @@ body {
 }
 
 /* Icons */
-.icon {
+/*.icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,16 +222,16 @@ body {
   border-radius: 0.75rem;
   transition: all 0.15s ease;
   cursor: pointer;
-}
+}*/
 
-.icon svg {
+/*.icon svg {
   width: 30px;
   height: 30px;
   fill: black;
-}
+}*/
 
-.icon path {
-  fill: none;
+/*.icon path {
+  fill: black;
   stroke: black;
   stroke-width: 2;
   stroke-linejoin: round;
@@ -235,7 +240,7 @@ body {
 .icon .fold {
   fill: black;
   stroke: none;
-}
+}*/
 
 /* hover state */
 .icon:hover {
@@ -268,7 +273,6 @@ body {
   white-space: nowrap;
 }
 
-/* RACHEL WILL ORGANIZE LATER */
 .top-bar {
   height: 60px;
   padding: 0 2rem;
@@ -309,6 +313,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: 2.25rem;
   margin-bottom: 2.25rem;
   padding: 0 2rem;
 }
@@ -329,7 +334,7 @@ body {
   background: var(--white);
   padding: 0.5rem;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .navbar {
@@ -341,8 +346,7 @@ body {
   align-items: center;
   justify-content: space-between;
 
-  padding: 0 1.5rem; 
-
+  padding: 0 1.5rem;
 }
 
 /* (Jot + title) */
@@ -380,11 +384,11 @@ body {
 /* Active tab */
 .nav-active {
   background: var(--light-grey);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
 }
 
 .hoverable {
-  display: inline-block; 
+  display: inline-block;
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
@@ -406,7 +410,7 @@ body {
   left: 40px;
   top: 50%;
   transform: translateY(-50%);
-  
+
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -436,4 +440,50 @@ body {
 
 .question {
   background-color: var(--light-pink);
+}
+
+/* board grid */
+.boards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  padding: 0 2rem 2rem 2rem;
+}
+
+.board-card {
+  display: flex;
+  flex-direction: column;
+
+  background: var(--white);
+  border: 1px solid var(--grey);
+  border-radius: 0.75rem;
+  overflow: hidden;
+
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+
+  width: 100%;
+}
+
+.board-card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.board-thumbnail {
+  height: 180px;
+  background: var(--light-grey);
+  overflow: hidden;
+}
+
+.board-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.board-info {
+  padding: 1rem 1.25rem;
+  background: var(--white);
 }

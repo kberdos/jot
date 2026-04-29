@@ -17,6 +17,11 @@ interface BoardStore {
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
 	board: undefined,
+
+	isChatOpen: false,
+	setIsChatOpen: (open: boolean) => set({ isChatOpen: open }),
+
+	
 	setBoard: async (id) => {
 		// query board from supabase
 		const { data, error } = await supabase
