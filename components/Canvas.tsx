@@ -19,6 +19,7 @@ import CollabLayer from "./Collab"
 
 import {
 	DEFAULT_SECTION_COLOR,
+	deleteSavedSection,
 	GhostSection,
 	noteIsInSection,
 	saveSection,
@@ -88,10 +89,13 @@ const Canvas = () => {
 
 	const {
 		addSectionMode,
+		activeSectionId,
 		setAddSectionMode,
+		setActiveSection,
 		ghostSection,
 		setGhostSection,
 		createSection,
+		deleteSection,
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
@@ -100,8 +104,11 @@ const Canvas = () => {
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
 	const activeArrowIdRef = useRef(activeArrowId)
+	const activeSectionIdRef = useRef(activeSectionId)
+	const updateNoteRef = useRef(updateNote)
 	const deleteNoteRef = useRef(deleteNote)
 	const deleteArrowRef = useRef(deleteArrow)
+	const deleteSectionRef = useRef(deleteSection)
 	const deleteArrowsForNoteRef = useRef(deleteArrowsForNote)
 	const touchPointers = useRef(new Map<number, TouchPoint>())
 	const pinchGesture = useRef<PinchGesture | null>(null)
@@ -110,8 +117,11 @@ const Canvas = () => {
 	cameraRef.current = camera
 	activeNoteIdRef.current = activeNoteId
 	activeArrowIdRef.current = activeArrowId
+	activeSectionIdRef.current = activeSectionId
+	updateNoteRef.current = updateNote
 	deleteNoteRef.current = deleteNote
 	deleteArrowRef.current = deleteArrow
+	deleteSectionRef.current = deleteSection
 	deleteArrowsForNoteRef.current = deleteArrowsForNote
 
 	const zoomAtPoint = useCallback(
@@ -135,7 +145,8 @@ const Canvas = () => {
 	const clearSelections = useCallback(() => {
 		setActiveNote(null)
 		setActiveArrow(null)
-	}, [setActiveArrow, setActiveNote])
+		setActiveSection(null)
+	}, [setActiveArrow, setActiveNote, setActiveSection])
 
 	const startPinchGesture = () => {
 		const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
@@ -178,13 +189,6 @@ const Canvas = () => {
 				return
 			}
 		}
-
-		if (e.buttons !== 1) return
-
-		setCamera({
-			x: cameraRef.current.x + e.movementX / cameraRef.current.zoom,
-			y: cameraRef.current.y + e.movementY / cameraRef.current.zoom,
-		})
 	}
 
 	const handleCanvasPointerUp = (e: React.PointerEvent) => {
@@ -404,8 +408,9 @@ const Canvas = () => {
 
 				const noteId = activeNoteIdRef.current
 				const arrowId = activeArrowIdRef.current
+				const sectionId = activeSectionIdRef.current
 
-				if (!noteId && !arrowId) return
+				if (!noteId && !arrowId && !sectionId) return
 
 				e.preventDefault()
 
@@ -425,6 +430,24 @@ const Canvas = () => {
 
 					deleteSavedArrow(arrowId).catch((error) => {
 						console.error("Failed to delete arrow:", error)
+					})
+				} else if (sectionId) {
+					const sectionNotes = useNoteStore
+						.getState()
+						.notes.filter((note) => note.section_id === sectionId)
+
+					sectionNotes.forEach((note) => {
+						updateNoteRef.current(note.id, { section_id: null })
+					})
+					deleteSectionRef.current(sectionId)
+
+					Promise.all([
+						...sectionNotes.map((note) =>
+							saveNote({ ...note, section_id: null }),
+						),
+						deleteSavedSection(sectionId),
+					]).catch((error) => {
+						console.error("Failed to delete section:", error)
 					})
 				}
 			}

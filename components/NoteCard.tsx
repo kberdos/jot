@@ -19,7 +19,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 	const { board } = useBoardStore()
 	const { user } = useAuthStore()
 	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
-	const { sections } = useSectionStore()
+	const { sections, setActiveSection } = useSectionStore()
 	const isActive = activeNoteId === note.id
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
@@ -54,19 +54,22 @@ const NoteObj = ({ note }: { note: Note }) => {
 			<button
 				style={{
 					position: "absolute",
-					left: x - 9,
-					top: y - 9
+					left: x - 22,
+					top: y - 22
 				}}
-				className="z-50 rounded-full bg-[var(--blue)] w-5 h-5"
+				className="z-50 w-11 h-11 flex items-center justify-center"
 				onPointerDown={(e) => e.stopPropagation()}
 				onPointerUp={(e) => e.stopPropagation()}
 				onClick={(e) => {
 					e.stopPropagation()
 					setActiveNote(null)
 					setActiveArrow(null)
+					setActiveSection(null)
 					handleGhostArrow(props.noteSide)
 				}}
-			/>
+			>
+				<span className="rounded-full bg-[var(--blue)] w-5 h-5" />
+			</button>
 		)
 	}
 
@@ -99,6 +102,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 				e.stopPropagation()
 				setActiveNote(note.id)
 				setActiveArrow(null)
+				setActiveSection(null)
 				handlePointerDown(e)
 			}}
 			onPointerMove={handlePointerMove}

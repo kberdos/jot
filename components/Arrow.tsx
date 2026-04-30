@@ -6,6 +6,7 @@ import { useNoteStore } from "@/util/objects/note";
 import { getNoteCoords } from "@/util/noteCoordinates";
 import { Coordinate, useCameraStore } from "@/util/objects/camera";
 import { toCamera } from "@/util/pointerfunctions";
+import { useSectionStore } from "@/util/objects/section";
 
 const ArrowPath = (props: { start: Coordinate, end: Coordinate, isActive?: boolean, onPointerDown?: (e: React.PointerEvent<SVGGElement>) => void }) => {
 	const padding = 20
@@ -51,6 +52,7 @@ function ArrowComponent(props: { arrow: Arrow }) {
 	const setActiveNote = useNoteStore(state => state.setActiveNote)
 	const activeArrowId = useArrowStore(state => state.activeArrowId)
 	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
+	const setActiveSection = useSectionStore(state => state.setActiveSection)
 
 	if (!startNote || !endNote) return null
 
@@ -65,6 +67,7 @@ function ArrowComponent(props: { arrow: Arrow }) {
 				e.stopPropagation()
 				setActiveNote(null)
 				setActiveArrow(props.arrow.id)
+				setActiveSection(null)
 			}}
 		/>
 	)

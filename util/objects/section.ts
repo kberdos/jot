@@ -25,7 +25,9 @@ export type AddSectionMode = "NONE" | "ACTIVE" | "ADDING"
 
 interface SectionStore {
 	sections: Section[];
+	activeSectionId: string | null;
 	updateSection: (id: string, changes: Partial<Section>) => void;
+	setActiveSection: (id: string | null) => void;
 	loadSections: (board_id: string) => Promise<void>;
 	createSection: (section: Section) => Section;
 	addSection: (section: Section) => void;
@@ -57,6 +59,15 @@ export async function saveSection(section: Section) {
 	if (error) throw error
 }
 
+export async function deleteSavedSection(id: string) {
+	const { error } = await supabase
+		.from("sections")
+		.delete()
+		.eq("id", id)
+
+	if (error) throw error
+}
+
 export function noteIsInSection(note: Note, section: Section): boolean {
 	const overlapX = Math.min(note.x + note.width, section.x + section.width) - Math.max(note.x, section.x);
 	const overlapY = Math.min(note.y + note.height, section.y + section.height) - Math.max(note.y, section.y);
@@ -71,10 +82,17 @@ export function noteIsInSection(note: Note, section: Section): boolean {
 
 export const useSectionStore = create<SectionStore>((set, get) => ({
 	sections: [],
+	activeSectionId: null,
 
 	updateSection: (id, changes) => {
 		set(state => ({
 			sections: state.sections.map(s => s.id === id ? { ...s, ...changes } : s)
+		}))
+	},
+
+	setActiveSection: (id) => {
+		set(_ => ({
+			activeSectionId: id,
 		}))
 	},
 
@@ -106,6 +124,7 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 	deleteSection: (id: string) => {
 		set(state => ({
 			sections: state.sections.filter(s => s.id !== id),
+			activeSectionId: state.activeSectionId === id ? null : state.activeSectionId,
 		}))
 	},
 

@@ -7,18 +7,51 @@ import { useEffect, useRef, useState } from "react"
 import { saveNote, useNoteStore } from "@/util/objects/note"
 import { useArrowStore } from "@/util/objects/arrow"
 
+const MIN_SECTION_SIZE = 80
 
+type ResizeCorner = "TOP_LEFT" | "TOP_RIGHT" | "BOTTOM_RIGHT" | "BOTTOM_LEFT"
+
+const resizeHandles: { corner: ResizeCorner; className: string }[] = [
+	{ corner: "TOP_LEFT", className: "-left-2 -top-2 cursor-nwse-resize" },
+	{ corner: "TOP_RIGHT", className: "-right-2 -top-2 cursor-nesw-resize" },
+	{ corner: "BOTTOM_RIGHT", className: "-right-2 -bottom-2 cursor-nwse-resize" },
+	{ corner: "BOTTOM_LEFT", className: "-left-2 -bottom-2 cursor-nesw-resize" },
+]
 
 export const SectionComponent = ({ section }: { section: Section }) => {
 	const camera = useCameraStore(state => state.camera)
-	const { updateSection, getNotesInSection } = useSectionStore()
-	const { notes, updateNote, setActiveNote } = useNoteStore()
+	const { updateSection, activeSectionId, setActiveSection } = useSectionStore()
+	const { updateNote, setActiveNote } = useNoteStore()
 	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
+	const isActive = activeSectionId === section.id
+	const sectionRef = useRef(section)
+
+	useEffect(() => {
+		sectionRef.current = section
+	}, [section])
+
+	const saveSectionAndMembership = async (currentSection: Section) => {
+		const currentNotes = useNoteStore.getState().notes
+
+		const sweptNotes = currentNotes.filter(note =>
+			note.section_id !== currentSection.id && noteIsInSection(note, currentSection)
+		)
+		sweptNotes.forEach(note => updateNote(note.id, { section_id: currentSection.id }))
+
+		await Promise.all([
+			...currentNotes
+				.filter(note => note.section_id === currentSection.id)
+				.map(note => saveNote(note)),
+			...sweptNotes.map(note => saveNote({ ...note, section_id: currentSection.id })),
+			saveSection(currentSection)
+		])
+	}
 
 	const handlePointerDown = (e: React.PointerEvent) => {
 		e.stopPropagation()
 		setActiveNote(null)
 		setActiveArrow(null)
+		setActiveSection(section.id)
 		e.currentTarget.setPointerCapture(e.pointerId)
 	}
 
@@ -27,28 +60,80 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 		if (e.buttons !== 1) return;
 		const dx = e.movementX / camera.zoom;
 		const dy = e.movementY / camera.zoom;
-		updateSection(section.id, { x: section.x + dx, y: section.y + dy })
-		notes
+		const currentSection = sectionRef.current
+		const nextSection = {
+			...currentSection,
+			x: currentSection.x + dx,
+			y: currentSection.y + dy,
+		}
+		sectionRef.current = nextSection
+		updateSection(section.id, { x: nextSection.x, y: nextSection.y })
+		useNoteStore.getState().notes
 			.filter(note => note.section_id === section.id)
 			.forEach(note => updateNote(note.id, { x: note.x + dx, y: note.y + dy }))
 	}
 
 	const handlePointerUp = async (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
+		await saveSectionAndMembership(sectionRef.current)
+	}
 
-		// assign newly overlapping notes that don't belong to this section yet
-		const sweptNotes = notes.filter(note =>
-			note.section_id !== section.id && noteIsInSection(note, section)
-		)
-		sweptNotes.forEach(note => updateNote(note.id, { section_id: section.id }))
+	const resizeSection = (corner: ResizeCorner, dx: number, dy: number) => {
+		const currentSection = sectionRef.current
+		let { x, y, width, height } = currentSection
 
-		await Promise.all([
-			...notes
-				.filter(note => note.section_id === section.id)
-				.map(note => saveNote(note)),
-			...sweptNotes.map(note => saveNote({ ...note, section_id: section.id })),
-			saveSection(section)
-		])
+		if (corner === "TOP_LEFT" || corner === "BOTTOM_LEFT") {
+			x += dx
+			width -= dx
+
+			if (width < MIN_SECTION_SIZE) {
+				x = currentSection.x + currentSection.width - MIN_SECTION_SIZE
+				width = MIN_SECTION_SIZE
+			}
+		}
+
+		if (corner === "TOP_RIGHT" || corner === "BOTTOM_RIGHT") {
+			width = Math.max(MIN_SECTION_SIZE, width + dx)
+		}
+
+		if (corner === "TOP_LEFT" || corner === "TOP_RIGHT") {
+			y += dy
+			height -= dy
+
+			if (height < MIN_SECTION_SIZE) {
+				y = currentSection.y + currentSection.height - MIN_SECTION_SIZE
+				height = MIN_SECTION_SIZE
+			}
+		}
+
+		if (corner === "BOTTOM_LEFT" || corner === "BOTTOM_RIGHT") {
+			height = Math.max(MIN_SECTION_SIZE, height + dy)
+		}
+
+		const nextSection = { ...currentSection, x, y, width, height }
+		sectionRef.current = nextSection
+		updateSection(section.id, { x, y, width, height })
+	}
+
+	const handleResizePointerDown = (e: React.PointerEvent) => {
+		e.stopPropagation()
+		setActiveNote(null)
+		setActiveArrow(null)
+		setActiveSection(section.id)
+		e.currentTarget.setPointerCapture(e.pointerId)
+	}
+
+	const handleResizePointerMove = (e: React.PointerEvent, corner: ResizeCorner) => {
+		e.stopPropagation()
+		if (e.buttons !== 1) return
+
+		resizeSection(corner, e.movementX / camera.zoom, e.movementY / camera.zoom)
+	}
+
+	const handleResizePointerUp = async (e: React.PointerEvent) => {
+		e.stopPropagation()
+		e.currentTarget.releasePointerCapture(e.pointerId)
+		await saveSectionAndMembership(sectionRef.current)
 	}
 
 	return (
@@ -63,11 +148,24 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 		>
 			<div style={{
 				backgroundColor: section.color,
+				border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
 				width: `${section.width}px`,
 				height: `${section.height}px`,
+				boxSizing: "border-box",
 			}}
 			>
 				{section.title}
+				{isActive && resizeHandles.map(({ corner, className }) => (
+					<button
+						key={corner}
+						aria-label={`Resize section ${corner.toLowerCase().replace("_", " ")}`}
+						className={`absolute z-[501] h-4 w-4 rounded-[4px] border-2 border-[var(--blue)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] ${className}`}
+						onPointerDown={handleResizePointerDown}
+						onPointerMove={(e) => handleResizePointerMove(e, corner)}
+						onPointerUp={handleResizePointerUp}
+						onPointerCancel={handleResizePointerUp}
+					/>
+				))}
 			</div>
 		</div>
 	)
