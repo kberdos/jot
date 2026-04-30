@@ -18,6 +18,126 @@ const resizeHandles: { corner: ResizeCorner; className: string }[] = [
 	{ corner: "BOTTOM_LEFT", className: "-left-2 -bottom-2 cursor-nesw-resize" },
 ]
 
+const getTitleWidth = (title: string) => `${Math.max(title.length, 1)}ch`
+
+const SectionTitle = (props: {
+	section: Section
+	onEditingChange: (isEditing: boolean) => void
+	onSelect: () => void
+}) => {
+	const updateSection = useSectionStore(state => state.updateSection)
+	const [isEditing, setIsEditing] = useState(false)
+	const [titleDraft, setTitleDraft] = useState(props.section.title)
+	const [titleEditMinWidth, setTitleEditMinWidth] = useState(props.section.title.length)
+	const inputRef = useRef<HTMLInputElement>(null)
+	const shouldCommitRef = useRef(true)
+
+	useEffect(() => {
+		if (!isEditing) return
+
+		inputRef.current?.focus()
+	}, [isEditing])
+
+	const startEditing = () => {
+		props.onSelect()
+		setTitleDraft(props.section.title)
+		setTitleEditMinWidth(props.section.title.length)
+		shouldCommitRef.current = true
+		setIsEditing(true)
+		props.onEditingChange(true)
+
+		requestAnimationFrame(() => {
+			inputRef.current?.setSelectionRange(props.section.title.length, props.section.title.length)
+		})
+	}
+
+	const stopEditing = (shouldCommit: boolean) => {
+		if (shouldCommit) {
+			const title = titleDraft.trim() || "Untitled Section"
+			const nextSection = { ...props.section, title }
+
+			setTitleDraft(title)
+			updateSection(props.section.id, { title })
+			saveSection(nextSection)
+		} else {
+			setTitleDraft(props.section.title)
+		}
+
+		setIsEditing(false)
+		props.onEditingChange(false)
+	}
+
+	return (
+		<div
+			style={{
+				position: "absolute",
+				left: 24,
+				top: 18,
+				backgroundColor: "#D9D9D9",
+				color: "#000",
+				fontFamily: "Roboto, Arial, sans-serif",
+				fontSize: "24px",
+				fontStyle: "normal",
+				fontWeight: 700,
+				lineHeight: "normal",
+				padding: "4px 10px",
+				pointerEvents: "auto",
+			}}
+			onPointerDown={(e) => {
+				e.stopPropagation()
+				props.onSelect()
+			}}
+			onDoubleClick={(e) => {
+				e.stopPropagation()
+				startEditing()
+			}}
+		>
+			{isEditing ? (
+				<input
+					ref={inputRef}
+					value={titleDraft}
+					style={{
+						background: "transparent",
+						border: "none",
+						outline: "none",
+						color: "inherit",
+						font: "inherit",
+						fontWeight: "inherit",
+						width: getTitleWidth(titleDraft),
+						minWidth: getTitleWidth(props.section.title.slice(0, titleEditMinWidth)),
+					}}
+					onPointerDown={(e) => e.stopPropagation()}
+					onDoubleClick={(e) => e.stopPropagation()}
+					onChange={(e) => setTitleDraft(e.target.value)}
+					onBlur={() => {
+						if (!shouldCommitRef.current) {
+							shouldCommitRef.current = true
+							return
+						}
+
+						stopEditing(true)
+					}}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							e.preventDefault()
+							shouldCommitRef.current = true
+							stopEditing(true)
+						}
+
+						if (e.key === "Escape") {
+							e.preventDefault()
+							shouldCommitRef.current = false
+							stopEditing(false)
+						}
+					}}
+				/>
+			) : (
+				props.section.title
+			)}
+		</div>
+	)
+}
+
 export const SectionComponent = ({ section }: { section: Section }) => {
 	const camera = useCameraStore(state => state.camera)
 	const { updateSection, activeSectionId, setActiveSection } = useSectionStore()
@@ -25,6 +145,7 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
 	const isActive = activeSectionId === section.id
 	const sectionRef = useRef(section)
+	const [isEditingTitle, setIsEditingTitle] = useState(false)
 
 	useEffect(() => {
 		sectionRef.current = section
@@ -57,6 +178,7 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		e.stopPropagation()
+		if (isEditingTitle) return
 		if (e.buttons !== 1) return;
 		const dx = e.movementX / camera.zoom;
 		const dy = e.movementY / camera.zoom;
@@ -136,6 +258,12 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 		await saveSectionAndMembership(sectionRef.current)
 	}
 
+	const selectSection = () => {
+		setActiveNote(null)
+		setActiveArrow(null)
+		setActiveSection(section.id)
+	}
+
 	return (
 		<div style={{
 			position: "absolute",
@@ -152,9 +280,14 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 				width: `${section.width}px`,
 				height: `${section.height}px`,
 				boxSizing: "border-box",
+				position: "relative",
 			}}
 			>
-				{section.title}
+				<SectionTitle
+					section={section}
+					onEditingChange={setIsEditingTitle}
+					onSelect={selectSection}
+				/>
 				{isActive && resizeHandles.map(({ corner, className }) => (
 					<button
 						key={corner}
