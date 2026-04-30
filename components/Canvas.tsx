@@ -494,8 +494,8 @@ const Canvas = () => {
 					bottom: 20,
 				}}
 				className={`border p-3 transition-opacity duration-500 ${camera.x !== 0 || camera.y !== 0 || camera.zoom !== 1
-						? "opacity-100"
-						: "opacity-0 pointer-events-none"
+					? "opacity-100"
+					: "opacity-0 pointer-events-none"
 					}`}
 				onClick={resetCamera}
 				onPointerDown={(e) => e.stopPropagation()}

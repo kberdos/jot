@@ -13,6 +13,8 @@ interface BoardStore {
 	setBoard: (id: string) => void; // gather from database
 	renameBoard: (name: string) => Promise<void>;
 	createBoard: (name: string, user: User) => Promise<Board>;
+	isChatOpen: boolean;
+	setIsChatOpen: (open: boolean) => void;
 }
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
@@ -21,7 +23,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 	isChatOpen: false,
 	setIsChatOpen: (open: boolean) => set({ isChatOpen: open }),
 
-	
+
 	setBoard: async (id) => {
 		// query board from supabase
 		const { data, error } = await supabase

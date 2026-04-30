@@ -29,3 +29,4 @@
 - first priority: zoom in thing
 - override the pinch zoom thing 
 - second: rename + resize sections
+- Jot Icon
