@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 
 interface Message {
@@ -14,31 +14,19 @@ export default function JotChat() {
 	const { board , setIsChatOpen} = useBoardStore()
 
 	const [width, setWidth] = useState(540)
-	const [isResizing, setIsResizing] = useState(false)
+	const resizeStartRef = useRef({ x: 0, width: 540 })
 
 	// useEffect(() => {
 	// 	setIsChatOpen(true)
 	// 	return () => setIsChatOpen(false)
 	// }, [])
 
-	useEffect(() => {
-		const handleMouseMove = (e: MouseEvent) => {
-			if (!isResizing) return
-	
-			const newWidth = window.innerWidth - e.clientX
-			setWidth(Math.max(300, Math.min(newWidth, 1200))) // limits
-		}
-	
-		const handleMouseUp = () => setIsResizing(false)
-	
-		window.addEventListener("mousemove", handleMouseMove)
-		window.addEventListener("mouseup", handleMouseUp)
-	
-		return () => {
-			window.removeEventListener("mousemove", handleMouseMove)
-			window.removeEventListener("mouseup", handleMouseUp)
-		}
-	}, [isResizing])
+	const finishResize = () => {
+		document.body.style.userSelect = ""
+		document.body.style.cursor = ""
+	}
+
+	const clampWidth = (value: number) => Math.max(300, Math.min(value, 1200))
 
 	const sendMessage = async () => {
 		if (!input.trim()) return
@@ -85,17 +73,40 @@ export default function JotChat() {
 			
 		// 	>
 		<div
-			className="fixed top-0 right-0 h-screen bg-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] flex flex-col border-l border-[var(--grey)] z-50 relative"
+			className="fixed top-0 right-0 h-screen bg-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] flex flex-col border-l border-[var(--grey)] z-50"
 
 			style={{ width }}
 		>
 				<div
-				onMouseDown={(e) => {
+				onPointerDown={(e) => {
 					e.stopPropagation()
-					setIsResizing(true)
+					e.preventDefault()
+					resizeStartRef.current = { x: e.clientX, width }
+					e.currentTarget.setPointerCapture(e.pointerId)
+					document.body.style.userSelect = "none"
+					document.body.style.cursor = "col-resize"
+				}}
+				onPointerMove={(e) => {
+					if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+
+					e.preventDefault()
+					const dx = resizeStartRef.current.x - e.clientX
+					setWidth(clampWidth(resizeStartRef.current.width + dx))
+				}}
+				onPointerUp={(e) => {
+					if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+						e.currentTarget.releasePointerCapture(e.pointerId)
+					}
+					finishResize()
+				}}
+				onPointerCancel={(e) => {
+					if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+						e.currentTarget.releasePointerCapture(e.pointerId)
+					}
+					finishResize()
 				}}
 				// className="absolute left-0 top-0 h-full w-3 cursor-col-resize group"
-				className="absolute left-0 top-0 h-full w-4 cursor-col-resize z-50"
+				className="absolute left-0 top-0 h-full w-4 cursor-col-resize z-50 touch-none"
 				>
 				</div>
 
