@@ -1,9 +1,10 @@
 import { create } from "zustand"
 import { supabase } from "@/util/supabase/supabase"
+import { User } from "@supabase/supabase-js"
 
-const DEFAULT_NOTE_WIDTH = 200
+export const DEFAULT_NOTE_WIDTH = 200
 // XXX: heights change dynamically based on text - can just use css styling 
-const DEFAULT_NOTE_HEIGHT = 200
+export const DEFAULT_NOTE_HEIGHT = 200
 const DEFAULT_NOTE_COLOR = "#FFF4BF"
 
 export interface Note {
@@ -12,9 +13,11 @@ export interface Note {
 	y: number;
 	width: number;
 	height: number
+	text: string;
 	color: string;
 	board_id: string;
 	author_id: string;
+	author_name: string;
 	section_id?: string | null;
 }
 
@@ -28,10 +31,19 @@ interface NoteStore {
 	setActiveNote: (id: string | null) => void;
 	deleteNote: (id: string) => void;
 	loadNotes: (board_id: string) => Promise<void>;
-	createNote: (x: number, y: number, board_id: string, user_id: string) => Note;
+	createNote: (x: number, y: number, board_id: string, user: User) => Note;
 	addNote: (note: Note) => void;
 }
 
+function getUserDisplayName(user: User): string {
+	const metadata = user.user_metadata
+	const name =
+		typeof metadata.full_name === "string" ? metadata.full_name :
+			typeof metadata.name === "string" ? metadata.name :
+				undefined
+
+	return name || user.email || "Unknown"
+}
 
 export async function saveNote(note: Note) {
 	console.log("saving note to board: ", note.board_id)
@@ -45,8 +57,10 @@ export async function saveNote(note: Note) {
 			color: note.color,
 			width: note.width,
 			height: note.height,
+			text: note.text,
 			board_id: note.board_id,
 			author_id: note.author_id,
+			author_name: note.author_name,
 			section_id: note.section_id,
 		}, { onConflict: 'id' })
 	if (error) throw error
@@ -89,19 +103,21 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 		if (error) throw error
 		const notes = data as Note[]
 		set(_ => ({
-			notes: notes,
+			notes: notes.map(note => ({ ...note, text: note.text ?? "", author_name: note.author_name ?? "Unknown" })),
 		}))
 	},
-	createNote: (x, y, board_id: string, user_id: string) => {
+	createNote: (x, y, board_id: string, user: User) => {
 		const note = {
 			id: crypto.randomUUID(),
 			x: x,
 			y: y,
 			width: DEFAULT_NOTE_WIDTH,
 			height: DEFAULT_NOTE_HEIGHT,
+			text: "",
 			color: DEFAULT_NOTE_COLOR,
 			board_id: board_id,
-			author_id: user_id,
+			author_id: user.id,
+			author_name: getUserDisplayName(user),
 		}
 		set(state => ({
 			notes: [...state.notes, note],
@@ -111,7 +127,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 	// NOTE: this is used for adding notes pulled from database
 	addNote: (note: Note) => {
 		set(state => ({
-			notes: [...state.notes, note],
+			notes: [...state.notes, { ...note, text: note.text ?? "", author_name: note.author_name ?? "Unknown" }],
 		}))
 	}
 }))

@@ -533,7 +533,7 @@ const Canvas = () => {
 					onClick={() => {
 						clearSelections()
 
-						const n = createNote(0, 0, board!.id, user!.id)
+						const n = createNote(0, 0, board!.id, user!)
 						const section = sections.find((s) => noteIsInSection(n, s))
 
 						if (section) {
@@ -562,7 +562,7 @@ const Canvas = () => {
 					<button
 						onClick={() => {
 							clearSelections()
-							const n = createNote(0, 0, board!.id, user!.id)
+							const n = createNote(0, 0, board!.id, user!)
 							saveNote(n)
 						}}
 						onPointerDown={(e) => e.stopPropagation()}

@@ -1,13 +1,17 @@
 "use client"
 
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useAuthStore } from "@/util/auth/auth"
 import { getNodeOffsets } from "@/util/noteCoordinates"
 import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
 import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
-import { Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
+import { DEFAULT_NOTE_HEIGHT, Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
 import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
+
+const NOTE_TEXT_PADDING = 12
+const NOTE_AUTHOR_HEIGHT = 22
 
 
 const NoteObj = ({ note }: { note: Note }) => {
@@ -21,6 +25,33 @@ const NoteObj = ({ note }: { note: Note }) => {
 	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
 	const { sections, setActiveSection } = useSectionStore()
 	const isActive = activeNoteId === note.id
+	const [isEditingText, setIsEditingText] = useState(false)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+	const growNoteForText = useCallback(() => {
+		const textarea = textareaRef.current
+		if (!textarea) return
+
+		textarea.style.height = "auto"
+		const nextHeight = Math.max(DEFAULT_NOTE_HEIGHT, textarea.scrollHeight + NOTE_AUTHOR_HEIGHT)
+		textarea.style.height = `calc(100% - ${NOTE_AUTHOR_HEIGHT}px)`
+
+		if (nextHeight !== note.height) {
+			updateNote(note.id, { height: nextHeight })
+		}
+	}, [note.height, note.id, updateNote])
+
+	useEffect(() => {
+		if (!isEditingText) return
+
+		textareaRef.current?.focus()
+		textareaRef.current?.setSelectionRange(note.text.length, note.text.length)
+		growNoteForText()
+	}, [growNoteForText, isEditingText, note.text.length])
+
+	useEffect(() => {
+		growNoteForText()
+	}, [growNoteForText, note.text, note.width])
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
 		if (addArrowMode === "ACTIVE") {
@@ -57,7 +88,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 					left: x - 22,
 					top: y - 22
 				}}
-				className="z-50 w-11 h-11 flex items-center justify-center"
+				className="z-50 w-11 h-11 flex items-center justify-center pointer-events-auto"
 				onPointerDown={(e) => e.stopPropagation()}
 				onPointerUp={(e) => e.stopPropagation()}
 				onClick={(e) => {
@@ -84,6 +115,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		e.stopPropagation()
+		if (isEditingText) return
 		if (e.buttons !== 1) return;
 		updateNote(note.id, {
 			x: note.x + e.movementX / camera.zoom,
@@ -105,6 +137,10 @@ const NoteObj = ({ note }: { note: Note }) => {
 				setActiveSection(null)
 				handlePointerDown(e)
 			}}
+			onDoubleClick={(e) => {
+				e.stopPropagation()
+				setIsEditingText(true)
+			}}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 		>
@@ -114,10 +150,85 @@ const NoteObj = ({ note }: { note: Note }) => {
 				width: `${note.width}px`,
 				height: `${note.height}px`,
 				boxSizing: "border-box",
+				position: "relative",
 			}}
 			>
+				<textarea
+					ref={textareaRef}
+					value={note.text}
+					readOnly={!isEditingText}
+					tabIndex={isEditingText ? 0 : -1}
+					spellCheck={false}
+					style={{
+						color: "#000",
+						fontFamily: "Roboto",
+						fontSize: "12px",
+						fontStyle: "normal",
+						fontWeight: 400,
+						lineHeight: "normal",
+						textAlign: "left",
+						background: isEditingText ? "rgba(255, 255, 255, 0.22)" : "transparent",
+						border: "none",
+						borderRadius: "3px",
+						outline: isEditingText ? "1px solid rgba(0, 122, 255, 0.28)" : "none",
+						outlineOffset: "-1px",
+						resize: "none",
+						overflow: "hidden",
+						width: "100%",
+						height: `calc(100% - ${NOTE_AUTHOR_HEIGHT}px)`,
+						padding: `${NOTE_TEXT_PADDING}px`,
+						boxSizing: "border-box",
+						cursor: isEditingText ? "text" : "default",
+						pointerEvents: isEditingText ? "auto" : "none",
+						transition: "background 140ms ease, outline-color 140ms ease",
+					}}
+					onPointerDown={(e) => {
+						if (isEditingText) e.stopPropagation()
+					}}
+					onPointerMove={(e) => {
+						if (isEditingText) e.stopPropagation()
+					}}
+					onPointerUp={(e) => {
+						if (isEditingText) e.stopPropagation()
+					}}
+					onDoubleClick={(e) => {
+						e.stopPropagation()
+						setIsEditingText(true)
+					}}
+					onChange={(e) => {
+						const text = e.target.value
+						updateNote(note.id, { text })
+						requestAnimationFrame(growNoteForText)
+					}}
+					onBlur={() => {
+						setIsEditingText(false)
+						const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id)
+						saveNote(currentNote ?? { ...note, text: note.text ?? "" })
+					}}
+				/>
+				<div
+					style={{
+						position: "absolute",
+						left: NOTE_TEXT_PADDING,
+						right: NOTE_TEXT_PADDING,
+						bottom: 8,
+						color: "#7B7B7B",
+						textAlign: "left",
+						fontFamily: "Roboto",
+						fontSize: "10px",
+						fontStyle: "normal",
+						fontWeight: 400,
+						lineHeight: "normal",
+						pointerEvents: "none",
+						overflow: "hidden",
+						textOverflow: "ellipsis",
+						whiteSpace: "nowrap",
+					}}
+				>
+					{note.author_name}
+				</div>
 				{addArrowMode !== "NONE" &&
-					<div className="relative">
+					<div className="absolute inset-0 pointer-events-none">
 						<ArrowTrigger noteSide="TOP" />
 						<ArrowTrigger noteSide="RIGHT" />
 						<ArrowTrigger noteSide="LEFT" />
