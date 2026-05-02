@@ -7,6 +7,7 @@ export interface Arrow {
 	id: string;
 	board_id: string;
 	author_id: string;
+	last_modified_by: string | null;
 	start_note_id: string;
 	start_note_side: NoteSide;
 	end_note_id: string;
@@ -47,6 +48,7 @@ export async function saveArrow(arrow: Arrow) {
 			id: arrow.id,
 			board_id: arrow.board_id,
 			author_id: arrow.author_id,
+			last_modified_by: arrow.last_modified_by,
 			start_note_id: arrow.start_note_id,
 			start_note_side: arrow.start_note_side,
 			end_note_id: arrow.end_note_id,
@@ -123,7 +125,10 @@ export const useArrowStore = create<ArrowStore>((set, get) => ({
 		if (error) throw error
 		const arrows = data as Arrow[]
 		set(_ => ({
-			arrows: arrows,
+			arrows: arrows.map(arrow => ({
+				...arrow,
+				last_modified_by: arrow.last_modified_by ?? null,
+			})),
 		}))
 	},
 	ghostArrow: undefined,

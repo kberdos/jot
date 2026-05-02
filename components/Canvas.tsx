@@ -1,61 +1,61 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useRef } from "react"
-import Link from "next/link"
+import { useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 
-import { useCameraStore } from "@/util/objects/camera"
-import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note"
-import { toCamera } from "@/util/pointerfunctions"
-import NoteObj from "./NoteCard"
-import { useBoardStore } from "@/util/objects/board"
-import { useAuthStore } from "@/util/auth/auth"
-import { ArrowLayer } from "./Arrow"
+import { useCameraStore } from "@/util/objects/camera";
+import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note";
+import { toCamera } from "@/util/pointerfunctions";
+import NoteObj from "./NoteCard";
+import { useBoardStore } from "@/util/objects/board";
+import { useAuthStore } from "@/util/auth/auth";
+import { ArrowLayer } from "./Arrow";
 import {
-	deleteSavedArrow,
-	deleteSavedArrowsForNote,
-	useArrowStore,
-} from "@/util/objects/arrow"
-import CollabLayer from "./Collab"
+  deleteSavedArrow,
+  deleteSavedArrowsForNote,
+  useArrowStore,
+} from "@/util/objects/arrow";
+import CollabLayer from "./Collab";
 
 import {
-	DEFAULT_SECTION_COLOR,
-	deleteSavedSection,
-	GhostSection,
-	noteIsInSection,
-	saveSection,
-	Section,
-	useSectionStore,
-} from "@/util/objects/section"
-import { GhostSectionComponent, SectionComponent } from "./Section"
+  DEFAULT_SECTION_COLOR,
+  deleteSavedSection,
+  GhostSection,
+  noteIsInSection,
+  saveSection,
+  Section,
+  useSectionStore,
+} from "@/util/objects/section";
+import { GhostSectionComponent, SectionComponent } from "./Section";
 
-const ZOOM_MIN = 0.5
-const ZOOM_MAX = 3
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
 
 type TouchPoint = {
-	x: number
-	y: number
-}
+  x: number;
+  y: number;
+};
 
 type PinchGesture = {
-	distance: number
-	midpoint: TouchPoint
-	camera: {
-		x: number
-		y: number
-		zoom: number
-	}
-}
+  distance: number;
+  midpoint: TouchPoint;
+  camera: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+};
 
 const getDistance = (a: TouchPoint, b: TouchPoint) =>
-	Math.hypot(a.x - b.x, a.y - b.y)
+  Math.hypot(a.x - b.x, a.y - b.y);
 
 const getMidpoint = (a: TouchPoint, b: TouchPoint): TouchPoint => ({
-	x: (a.x + b.x) / 2,
-	y: (a.y + b.y) / 2,
-})
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+});
 
 const clampZoom = (zoom: number) =>
-	Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN))
+  Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN));
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
@@ -65,7 +65,9 @@ const Canvas = () => {
 		createNote,
 		updateNote,
 		activeNoteId,
+		highlightedNoteIds,
 		setActiveNote,
+		clearHighlightedNotes,
 		deleteNote,
 	} = useNoteStore()
 
@@ -90,8 +92,10 @@ const Canvas = () => {
 	const {
 		addSectionMode,
 		activeSectionId,
+		highlightedSectionIds,
 		setAddSectionMode,
 		setActiveSection,
+		clearHighlightedSections,
 		ghostSection,
 		setGhostSection,
 		createSection,
@@ -146,6 +150,11 @@ const Canvas = () => {
 		setActiveArrow(null)
 		setActiveSection(null)
 	}, [setActiveArrow, setActiveNote, setActiveSection])
+
+	const clearHighlights = useCallback(() => {
+		clearHighlightedNotes()
+		clearHighlightedSections()
+	}, [clearHighlightedNotes, clearHighlightedSections])
 
 	const startPinchGesture = () => {
 		const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
@@ -254,6 +263,7 @@ const Canvas = () => {
 				title: "Untitled Section",
 				board_id: board!.id,
 				author_id: user!.id,
+				last_modified_by: user!.id,
 				color: DEFAULT_SECTION_COLOR,
 				x,
 				y,
@@ -270,13 +280,20 @@ const Canvas = () => {
 			)
 
 			containedNotes.forEach((note) =>
-				updateNote(note.id, { section_id: section.id }),
+				updateNote(note.id, {
+					section_id: section.id,
+					last_modified_by: user!.id,
+				}),
 			)
 
 			await Promise.all([
 				saveSection(section),
 				...containedNotes.map((note) =>
-					saveNote({ ...note, section_id: section.id }),
+					saveNote({
+						...note,
+						section_id: section.id,
+						last_modified_by: user!.id,
+					}),
 				),
 			])
 		}
@@ -438,13 +455,20 @@ const Canvas = () => {
 						.notes.filter((note) => note.section_id === sectionId)
 
 					sectionNotes.forEach((note) => {
-						updateNoteRef.current(note.id, { section_id: null })
+						updateNoteRef.current(note.id, {
+							section_id: null,
+							last_modified_by: user!.id,
+						})
 					})
 					deleteSectionRef.current(sectionId)
 
 					Promise.all([
 						...sectionNotes.map((note) =>
-							saveNote({ ...note, section_id: null }),
+							saveNote({
+								...note,
+								section_id: null,
+								last_modified_by: user!.id,
+							}),
 						),
 						deleteSavedSection(sectionId),
 					]).catch((error) => {
@@ -457,7 +481,7 @@ const Canvas = () => {
 		window.addEventListener("keydown", handleKeyDown)
 
 		return () => window.removeEventListener("keydown", handleKeyDown)
-	}, [handleEscape])
+	}, [handleEscape, user])
 
 	return (
 		<div
@@ -526,6 +550,22 @@ const Canvas = () => {
 			>
 				Reset View
 			</button>
+
+			{(highlightedNoteIds.length > 0 || highlightedSectionIds.length > 0) && (
+				<button
+					style={{
+						position: "absolute",
+						left: "50%",
+						bottom: 20,
+						transform: "translateX(-50%)",
+					}}
+					className="px-6 py-3 bg-white border border-[var(--grey)] rounded-[8px] text-xl shadow-[0_4px_10px_rgba(0,0,0,0.18)] hover:bg-[var(--light-grey)]"
+					onClick={clearHighlights}
+					onPointerDown={(e) => e.stopPropagation()}
+				>
+					Stop Highlighting
+				</button>
+			)}
 
 			<div className="toolbar">
 				<button
