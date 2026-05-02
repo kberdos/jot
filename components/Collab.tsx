@@ -27,6 +27,7 @@ export default function CollabLayer() {
 		<>
 			{cursors.map((cursor) => {
 				const color = getCursorColor(cursor.user_id)
+				const label = cursor.user_name || cursor.user_email
 
 				return (
 					<div style={{
@@ -60,9 +61,10 @@ export default function CollabLayer() {
 							left: 12,
       						top: 16,
 							display: "inline-block",
+							whiteSpace: "nowrap",
 						}}
 						>
-							{cursor.user_email}
+							{label}
 						</div>
 					</div>
 				)
