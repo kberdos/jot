@@ -123,7 +123,8 @@ export default function BoardShareDialog(props: {
 
 	return (
 		<div
-			className="fixed inset-0 z-[1000] flex items-center justify-center bg-white/60"
+			className="fixed inset-0 z-[1000] flex items-center justify-center"
+			style={{ backgroundColor: "#EAEAEA99" }}
 			onPointerDown={(e) => {
 				e.stopPropagation()
 				props.onClose()
@@ -133,13 +134,13 @@ export default function BoardShareDialog(props: {
 				className="w-[420px] rounded-[8px] border border-[var(--grey)] bg-white p-4 shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
 				onPointerDown={(e) => e.stopPropagation()}
 			>
-				<div className="mb-4 flex items-start justify-between gap-4">
+				<div className="mb-3 flex items-start justify-between gap-4">
 					<h3 className="text-large font-medium">
 						Share “{props.board.name}”
 					</h3>
 					<button
 						aria-label="Close sharing dialog"
-						className="rounded-[6px] px-2 py-1 text-xl leading-none hover:bg-[var(--light-grey)]"
+						className="rounded-[6px] px-2 py-1 text-xl"
 						onClick={props.onClose}
 					>
 						×
@@ -157,7 +158,7 @@ export default function BoardShareDialog(props: {
 					<button
 						type="submit"
 						disabled={isSharing || email.trim().length === 0}
-						className="button button-small grey-button disabled:cursor-not-allowed disabled:opacity-50"
+						className="button button-small grey-button"
 					>
 						{isSharing ? "Sharing..." : "Share"}
 					</button>

@@ -20,7 +20,7 @@ const roboto = Roboto({
   subsets: ["latin"]
 })
 
-const NoteObj = ({ note }: { note: Note }) => {
+const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "cursor" | "note" | "arrow" | "section") => void }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
 	const activeNoteId = useNoteStore(state => state.activeNoteId)
 	const highlightedNoteIds = useNoteStore(state => state.highlightedNoteIds)
@@ -87,7 +87,9 @@ const NoteObj = ({ note }: { note: Note }) => {
 			}
 			setGhostArrow(undefined)
 			setAddArrowMode("NONE")
+			setActiveTool("cursor") 
 			createArrow(arrow)
+			
 		}
 	}
 

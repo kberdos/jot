@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 
 import { useCameraStore } from "@/util/objects/camera";
 import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note";
@@ -11,20 +10,20 @@ import { useBoardStore } from "@/util/objects/board";
 import { useAuthStore } from "@/util/auth/auth";
 import { ArrowLayer } from "./Arrow";
 import {
-  deleteSavedArrow,
-  deleteSavedArrowsForNote,
-  useArrowStore,
+	deleteSavedArrow,
+	deleteSavedArrowsForNote,
+	useArrowStore,
 } from "@/util/objects/arrow";
 import CollabLayer from "./Collab";
 
 import {
-  DEFAULT_SECTION_COLOR,
-  deleteSavedSection,
-  GhostSection,
-  noteIsInSection,
-  saveSection,
-  Section,
-  useSectionStore,
+	DEFAULT_SECTION_COLOR,
+	deleteSavedSection,
+	GhostSection,
+	noteIsInSection,
+	saveSection,
+	Section,
+	useSectionStore,
 } from "@/util/objects/section";
 import { GhostSectionComponent, SectionComponent } from "./Section";
 import BoardShareDialog from "./BoardShareDialog";
@@ -33,30 +32,30 @@ const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 3;
 
 type TouchPoint = {
-  x: number;
-  y: number;
+	x: number;
+	y: number;
 };
 
 type PinchGesture = {
-  distance: number;
-  midpoint: TouchPoint;
-  camera: {
-    x: number;
-    y: number;
-    zoom: number;
-  };
+	distance: number;
+	midpoint: TouchPoint;
+	camera: {
+		x: number;
+		y: number;
+		zoom: number;
+	};
 };
 
 const getDistance = (a: TouchPoint, b: TouchPoint) =>
-  Math.hypot(a.x - b.x, a.y - b.y);
+	Math.hypot(a.x - b.x, a.y - b.y);
 
 const getMidpoint = (a: TouchPoint, b: TouchPoint): TouchPoint => ({
-  x: (a.x + b.x) / 2,
-  y: (a.y + b.y) / 2,
+	x: (a.x + b.x) / 2,
+	y: (a.y + b.y) / 2,
 });
 
 const clampZoom = (zoom: number) =>
-  Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN));
+	Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN));
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
@@ -74,12 +73,7 @@ const Canvas = () => {
 
 	const { sections } = useSectionStore()
 
-	const {
-		board,
-		renameBoard,
-		isChatOpen,
-		setIsChatOpen,
-	} = useBoardStore()
+	const { board } = useBoardStore()
 
 	const {
 		setAddArrowMode,
@@ -118,6 +112,8 @@ const Canvas = () => {
 	const touchPointers = useRef(new Map<number, TouchPoint>())
 	const pinchGesture = useRef<PinchGesture | null>(null)
 	const gestureStart = useRef<PinchGesture | null>(null)
+	const [activeTool, setActiveTool] = useState<"cursor" | "note" | "arrow" | "section">("cursor")
+
 
 	cameraRef.current = camera
 	activeNoteIdRef.current = activeNoteId
@@ -152,6 +148,11 @@ const Canvas = () => {
 		setActiveArrow(null)
 		setActiveSection(null)
 	}, [setActiveArrow, setActiveNote, setActiveSection])
+
+	const resetToCursor = useCallback(() => {
+		clearSelections()
+		setActiveTool("cursor")
+	}, [clearSelections])
 
 	const clearHighlights = useCallback(() => {
 		clearHighlightedNotes()
@@ -218,12 +219,6 @@ const Canvas = () => {
 		}
 	}
 
-	const handleRenameBoard = async () => {
-		const name = prompt("Enter new name")
-		if (name) {
-			await renameBoard(name)
-		}
-	}
 
 	const handlePointerDown = async (e: React.PointerEvent) => {
 		const target = e.currentTarget
@@ -275,6 +270,7 @@ const Canvas = () => {
 
 			setGhostSection(undefined)
 			setAddSectionMode("NONE")
+			setActiveTool("cursor") 
 			createSection(section)
 
 			const containedNotes = notes.filter((note) =>
@@ -304,12 +300,14 @@ const Canvas = () => {
 	}
 
 	const handleEscape = useCallback(() => {
+		resetToCursor()
 		clearSelections()
 		setAddArrowMode("NONE")
 		setGhostArrow(undefined)
 		setAddSectionMode("NONE")
 		setGhostSection(undefined)
 	}, [
+		resetToCursor,
 		clearSelections,
 		setAddArrowMode,
 		setGhostArrow,
@@ -510,7 +508,7 @@ const Canvas = () => {
 				className="relative"
 			>
 				{notes.map((note) => (
-					<NoteObj key={note.id} note={note} />
+					<NoteObj key={note.id} note={note} setActiveTool={setActiveTool}/>
 				))}
 
 				{sections.map((section) => (
@@ -572,11 +570,9 @@ const Canvas = () => {
 			<div className="toolbar">
 				<button
 					
-					className="icon"
+					className={`icon ${activeTool === "cursor" ? "active" : ""}`}
 					onPointerDown={(e) => e.stopPropagation()}
-					onClick={() => {
-						clearSelections()
-					}}
+					onClick={() => resetToCursor()}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -592,25 +588,12 @@ const Canvas = () => {
 					</svg>
 				</button>
 
-				<div className="note-wrapper">
+				<div className={`note-wrapper ${activeTool === "note" ? "active" : ""}`}>
 					<button
 						onClick={(e) => {
 							e.stopPropagation()
 							clearSelections()
-							// const n = createNote(0, 0, board!.id, user!)
-							// const rect = canvasRef.current!.getBoundingClientRect()
-
-							// // center of visible screen
-							// const screenX = rect.width / 2
-							// const screenY = rect.height / 2
-						  
-							// // convert to board coordinates
-							// const boardX = (screenX-camera.x) / camera.zoom
-							// const boardY = (screenY-camera.y) / camera.zoom
-						  
-							// const n = createNote(boardX, boardY, board!.id, user!)
-	
-							// saveNote(n)
+							setActiveTool("note")
 						}}
 						onPointerDown={(e) => e.stopPropagation()}
 						className="icon"
@@ -630,7 +613,7 @@ const Canvas = () => {
 					</button>
 
 					<div className="note-hover-menu">
-						
+
 						<button className="pill idea"
 								onPointerDown={(e) => e.stopPropagation()}
 								onClick={(e) => {
@@ -648,6 +631,7 @@ const Canvas = () => {
 									const n = createNote(boardX, boardY, board!.id, user!, "idea")
 									n.type = "idea"
 									saveNote(n)
+									setActiveTool("cursor")
 								}}
 								>Idea</button>
 						<button className="pill question"
@@ -660,14 +644,14 @@ const Canvas = () => {
 								// center of visible screen
 								const screenX = rect.width / 2
 								const screenY = rect.height / 2
-							
+
 								// convert to board coordinates
-								const boardX = (screenX-camera.x) / camera.zoom
-								const boardY = (screenY-camera.y) / camera.zoom
-							
+								const boardX = (screenX - camera.x) / camera.zoom
+								const boardY = (screenY - camera.y) / camera.zoom
+
 								const n = createNote(boardX, boardY, board!.id, user!, "question")
-								n.type = "question"
 								saveNote(n)
+								setActiveTool("cursor")
 							}}
 						>Question</button>
 					</div>
@@ -677,9 +661,10 @@ const Canvas = () => {
 					onClick={() => {
 						clearSelections()
 						setAddArrowMode("ACTIVE")
+						setActiveTool("arrow")
 					}}
 					onPointerDown={(e) => e.stopPropagation()}
-					className="icon"
+					className={`icon ${activeTool === "arrow" ? "active" : ""}`}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -695,11 +680,12 @@ const Canvas = () => {
 				</button>
 
 				<button
-					className="icon"
+					className={`icon ${activeTool === "section" ? "active" : ""}`}
 					onPointerDown={(e) => e.stopPropagation()}
 					onClick={() => {
 						clearSelections()
 						setAddSectionMode("ACTIVE")
+						setActiveTool("section")
 					}}
 				>
 					<svg
@@ -725,42 +711,6 @@ const Canvas = () => {
 				</button>
 			</div>
 
-			<div className="navbar" onPointerDown={(e) => e.stopPropagation()}>
-				<div className="nav-pill">
-					<Link href="/" className="nav-logo cursor-pointer hoverable">
-						Jot
-					</Link>
-
-					<span className="text-xxl">•</span>
-
-					<span
-						className="text-xl cursor-pointer hoverable"
-						onClick={handleRenameBoard}
-					>
-						{board?.name || "Jot Design Brainstorm"}
-					</span>
-				</div>
-
-				<div className="nav-center">
-					<button className="text-xl button white-button shadow-[0_10px_20px_rgba(0,0,0,0.50)]">
-						Board
-					</button>
-
-					<button className="text-xl button white-button shadow-[0_10px_20px_rgba(0,0,0,0.50)]">
-						Table
-					</button>
-				</div>
-
-				{!isChatOpen && (
-					<button
-						className="text-xl button blue-button"
-						onClick={() => setIsShareDialogOpen(true)}
-					>
-						Share
-					</button>
-				)}
-			</div>
-
 			{isShareDialogOpen && board && user && (
 				<BoardShareDialog
 					board={board}
@@ -769,26 +719,6 @@ const Canvas = () => {
 				/>
 			)}
 
-			{!isChatOpen && (
-				<button
-					onPointerDown={(e) => e.stopPropagation()}
-					onClick={() => setIsChatOpen(true)}
-					className="absolute right-6 bottom-6 w-[80px] h-[80px] rounded-full bg-[var(--white)] shadow-[0_10px_20px_rgba(0,0,0,0.30)] flex items-center justify-center cursor-pointer hover:bg-[var(--grey)]"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="40"
-						height="32"
-						viewBox="0 0 57 47"
-						fill="none"
-					>
-						<path
-							d="M5.16667 23.25C2.325 23.25 0 20.925 0 18.0833V5.16667C0 2.325 2.325 0 5.16667 0H25.8333C28.675 0 31 2.325 31 5.16667V18.0833C31 20.925 28.675 23.25 25.8333 23.25H20.6667V31L12.9167 23.25H5.16667ZM51.6667 38.75C54.5083 38.75 56.8333 36.425 56.8333 33.5833V20.6667C56.8333 17.825 54.5083 15.5 51.6667 15.5H36.1667V18.0833C36.1667 23.7667 31.5167 28.4167 25.8333 28.4167V33.5833C25.8333 36.425 28.1583 38.75 31 38.75H36.1667V46.5L43.9167 38.75H51.6667Z"
-							fill="black"
-						/>
-					</svg>
-				</button>
-			)}
 		</div>
 	)
 }
