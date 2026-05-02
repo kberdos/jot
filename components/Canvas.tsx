@@ -520,7 +520,7 @@ const Canvas = () => {
 				className="relative"
 			>
 				{notes.map((note) => (
-					<NoteObj key={note.id} note={note} />
+					<NoteObj key={note.id} note={note} setActiveTool={setActiveTool}/>
 				))}
 
 				{sections.map((section) => (

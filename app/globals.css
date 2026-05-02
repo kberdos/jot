@@ -395,6 +395,11 @@ body {
   display: inline-block;
 }
 
+
+.note-wrapper.active .icon {
+  background-color: var(--grey);
+}
+
 /* hidden by default */
 .note-hover-menu {
   position: absolute;
@@ -412,8 +417,8 @@ body {
   z-index: 1000;
 }
 
-/* show on hover */
-.note-wrapper:hover .note-hover-menu {
+
+.note-wrapper.active .note-hover-menu {
   opacity: 1;
   pointer-events: auto;
 }
