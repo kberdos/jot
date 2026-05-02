@@ -6,11 +6,25 @@ import { useState } from "react"
 import { type BoardViewMode, useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import BoardShareDialog from "./BoardShareDialog"
+import { useArrowStore } from "@/util/objects/arrow"
+import { useNoteStore } from "@/util/objects/note"
+import { useSectionStore } from "@/util/objects/section"
+import { getTableData } from "@/util/tableData"
 
 const viewButtons: { mode: BoardViewMode; label: string }[] = [
 	{ mode: "BOARD", label: "Board" },
 	{ mode: "TABLE", label: "Table" },
 ]
+
+function getExportFileName(boardName?: string) {
+	const slug = boardName
+		?.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+
+	return `${slug || "jot-board-export"}.json`
+}
 
 export default function BoardNavbar() {
 	const {
@@ -22,6 +36,32 @@ export default function BoardNavbar() {
 	} = useBoardStore()
 	const { user } = useAuthStore()
 	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
+	const notes = useNoteStore((state) => state.notes)
+	const arrows = useArrowStore((state) => state.arrows)
+	const sections = useSectionStore((state) => state.sections)
+
+	const handleExportBoard = () => {
+		const { noteRows, sectionRows } = getTableData(notes, sections, arrows)
+		const exportData = {
+			board: {
+				id: board?.id,
+				name: board?.name,
+			},
+			notes: noteRows,
+			sections: sectionRows,
+		}
+		const json = JSON.stringify(exportData, null, 2)
+		const blob = new Blob([json], { type: "application/json" })
+		const url = URL.createObjectURL(blob)
+		const link = document.createElement("a")
+
+		link.href = url
+		link.download = getExportFileName(board?.name)
+		document.body.appendChild(link)
+		link.click()
+		link.remove()
+		URL.revokeObjectURL(url)
+	}
 
 	const handleRenameBoard = async () => {
 		const name = prompt("Enter new name")
@@ -66,6 +106,7 @@ export default function BoardNavbar() {
 						className="text-xl button blue-button nav-icon-button"
 						aria-label="Export board data as JSON"
 						title="Export board data as JSON"
+						onClick={handleExportBoard}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"

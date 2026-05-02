@@ -5,6 +5,7 @@ import { Section } from "@/util/objects/section"
 export interface NoteTableRow {
 	id: number;
 	author: string;
+	type: string;
 	text: string;
 	connections: string;
 	section: string;
@@ -43,6 +44,7 @@ export function getTableData(
 		return {
 			id: index,
 			author: note.author_name || "Unknown",
+			type: note.type,
 			text: note.text || "",
 			connections: `[${uniqueConnections.join(", ")}]`,
 			section: note.section_id
