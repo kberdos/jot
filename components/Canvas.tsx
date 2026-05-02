@@ -1,61 +1,62 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useRef } from "react"
-import Link from "next/link"
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
-import { useCameraStore } from "@/util/objects/camera"
-import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note"
-import { toCamera } from "@/util/pointerfunctions"
-import NoteObj from "./NoteCard"
-import { useBoardStore } from "@/util/objects/board"
-import { useAuthStore } from "@/util/auth/auth"
-import { ArrowLayer } from "./Arrow"
+import { useCameraStore } from "@/util/objects/camera";
+import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note";
+import { toCamera } from "@/util/pointerfunctions";
+import NoteObj from "./NoteCard";
+import { useBoardStore } from "@/util/objects/board";
+import { useAuthStore } from "@/util/auth/auth";
+import { ArrowLayer } from "./Arrow";
 import {
-	deleteSavedArrow,
-	deleteSavedArrowsForNote,
-	useArrowStore,
-} from "@/util/objects/arrow"
-import CollabLayer from "./Collab"
+  deleteSavedArrow,
+  deleteSavedArrowsForNote,
+  useArrowStore,
+} from "@/util/objects/arrow";
+import CollabLayer from "./Collab";
 
 import {
-	DEFAULT_SECTION_COLOR,
-	deleteSavedSection,
-	GhostSection,
-	noteIsInSection,
-	saveSection,
-	Section,
-	useSectionStore,
-} from "@/util/objects/section"
-import { GhostSectionComponent, SectionComponent } from "./Section"
+  DEFAULT_SECTION_COLOR,
+  deleteSavedSection,
+  GhostSection,
+  noteIsInSection,
+  saveSection,
+  Section,
+  useSectionStore,
+} from "@/util/objects/section";
+import { GhostSectionComponent, SectionComponent } from "./Section";
+import BoardShareDialog from "./BoardShareDialog";
 
-const ZOOM_MIN = 0.5
-const ZOOM_MAX = 3
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
 
 type TouchPoint = {
-	x: number
-	y: number
-}
+  x: number;
+  y: number;
+};
 
 type PinchGesture = {
-	distance: number
-	midpoint: TouchPoint
-	camera: {
-		x: number
-		y: number
-		zoom: number
-	}
-}
+  distance: number;
+  midpoint: TouchPoint;
+  camera: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+};
 
 const getDistance = (a: TouchPoint, b: TouchPoint) =>
-	Math.hypot(a.x - b.x, a.y - b.y)
+  Math.hypot(a.x - b.x, a.y - b.y);
 
 const getMidpoint = (a: TouchPoint, b: TouchPoint): TouchPoint => ({
-	x: (a.x + b.x) / 2,
-	y: (a.y + b.y) / 2,
-})
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+});
 
 const clampZoom = (zoom: number) =>
-	Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN))
+  Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN));
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
@@ -65,7 +66,9 @@ const Canvas = () => {
 		createNote,
 		updateNote,
 		activeNoteId,
+		highlightedNoteIds,
 		setActiveNote,
+		clearHighlightedNotes,
 		deleteNote,
 	} = useNoteStore()
 
@@ -90,8 +93,10 @@ const Canvas = () => {
 	const {
 		addSectionMode,
 		activeSectionId,
+		highlightedSectionIds,
 		setAddSectionMode,
 		setActiveSection,
+		clearHighlightedSections,
 		ghostSection,
 		setGhostSection,
 		createSection,
@@ -99,7 +104,7 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
-
+	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -148,6 +153,11 @@ const Canvas = () => {
 		setActiveSection(null)
 	}, [setActiveArrow, setActiveNote, setActiveSection])
 
+	const clearHighlights = useCallback(() => {
+		clearHighlightedNotes()
+		clearHighlightedSections()
+	}, [clearHighlightedNotes, clearHighlightedSections])
+
 	const startPinchGesture = () => {
 		const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
 
@@ -159,6 +169,8 @@ const Canvas = () => {
 			camera: cameraRef.current,
 		}
 	}
+
+
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.pointerType === "touch") {
@@ -253,6 +265,7 @@ const Canvas = () => {
 				title: "Untitled Section",
 				board_id: board!.id,
 				author_id: user!.id,
+				last_modified_by: user!.id,
 				color: DEFAULT_SECTION_COLOR,
 				x,
 				y,
@@ -269,13 +282,20 @@ const Canvas = () => {
 			)
 
 			containedNotes.forEach((note) =>
-				updateNote(note.id, { section_id: section.id }),
+				updateNote(note.id, {
+					section_id: section.id,
+					last_modified_by: user!.id,
+				}),
 			)
 
 			await Promise.all([
 				saveSection(section),
 				...containedNotes.map((note) =>
-					saveNote({ ...note, section_id: section.id }),
+					saveNote({
+						...note,
+						section_id: section.id,
+						last_modified_by: user!.id,
+					}),
 				),
 			])
 		}
@@ -437,13 +457,20 @@ const Canvas = () => {
 						.notes.filter((note) => note.section_id === sectionId)
 
 					sectionNotes.forEach((note) => {
-						updateNoteRef.current(note.id, { section_id: null })
+						updateNoteRef.current(note.id, {
+							section_id: null,
+							last_modified_by: user!.id,
+						})
 					})
 					deleteSectionRef.current(sectionId)
 
 					Promise.all([
 						...sectionNotes.map((note) =>
-							saveNote({ ...note, section_id: null }),
+							saveNote({
+								...note,
+								section_id: null,
+								last_modified_by: user!.id,
+							}),
 						),
 						deleteSavedSection(sectionId),
 					]).catch((error) => {
@@ -456,7 +483,7 @@ const Canvas = () => {
 		window.addEventListener("keydown", handleKeyDown)
 
 		return () => window.removeEventListener("keydown", handleKeyDown)
-	}, [handleEscape])
+	}, [handleEscape, user])
 
 	return (
 		<div
@@ -526,22 +553,29 @@ const Canvas = () => {
 				Reset View
 			</button>
 
+			{(highlightedNoteIds.length > 0 || highlightedSectionIds.length > 0) && (
+				<button
+					style={{
+						position: "absolute",
+						left: "50%",
+						bottom: 20,
+						transform: "translateX(-50%)",
+					}}
+					className="px-6 py-3 bg-white border border-[var(--grey)] rounded-[8px] text-xl shadow-[0_4px_10px_rgba(0,0,0,0.18)] hover:bg-[var(--light-grey)]"
+					onClick={clearHighlights}
+					onPointerDown={(e) => e.stopPropagation()}
+				>
+					Stop Highlighting
+				</button>
+			)}
+
 			<div className="toolbar">
 				<button
+					
 					className="icon"
 					onPointerDown={(e) => e.stopPropagation()}
 					onClick={() => {
 						clearSelections()
-
-						const n = createNote(0, 0, board!.id, user!)
-						const section = sections.find((s) => noteIsInSection(n, s))
-
-						if (section) {
-							n.section_id = section.id
-							updateNote(n.id, { section_id: section.id })
-						}
-
-						saveNote(n)
 					}}
 				>
 					<svg
@@ -560,10 +594,23 @@ const Canvas = () => {
 
 				<div className="note-wrapper">
 					<button
-						onClick={() => {
+						onClick={(e) => {
+							e.stopPropagation()
 							clearSelections()
-							const n = createNote(0, 0, board!.id, user!)
-							saveNote(n)
+							// const n = createNote(0, 0, board!.id, user!)
+							// const rect = canvasRef.current!.getBoundingClientRect()
+
+							// // center of visible screen
+							// const screenX = rect.width / 2
+							// const screenY = rect.height / 2
+						  
+							// // convert to board coordinates
+							// const boardX = (screenX-camera.x) / camera.zoom
+							// const boardY = (screenY-camera.y) / camera.zoom
+						  
+							// const n = createNote(boardX, boardY, board!.id, user!)
+	
+							// saveNote(n)
 						}}
 						onPointerDown={(e) => e.stopPropagation()}
 						className="icon"
@@ -583,8 +630,46 @@ const Canvas = () => {
 					</button>
 
 					<div className="note-hover-menu">
-						<button className="pill idea">Idea</button>
-						<button className="pill question">Question</button>
+						
+						<button className="pill idea"
+								onPointerDown={(e) => e.stopPropagation()}
+								onClick={(e) => {
+									e.stopPropagation()
+									console.log("hiiii")
+									const rect = canvasRef.current!.getBoundingClientRect()
+
+									// center of visible screen
+									const screenX = rect.width / 2
+									const screenY = rect.height / 2
+								
+									// convert to board coordinates
+									const boardX = (screenX-camera.x) / camera.zoom
+									const boardY = (screenY-camera.y) / camera.zoom
+									const n = createNote(boardX, boardY, board!.id, user!, "idea")
+									n.type = "idea"
+									saveNote(n)
+								}}
+								>Idea</button>
+						<button className="pill question"
+							onPointerDown={(e) => e.stopPropagation()}
+							onClick={(e) => {
+								e.stopPropagation()
+								console.log("hello")
+								const rect = canvasRef.current!.getBoundingClientRect()
+
+								// center of visible screen
+								const screenX = rect.width / 2
+								const screenY = rect.height / 2
+							
+								// convert to board coordinates
+								const boardX = (screenX-camera.x) / camera.zoom
+								const boardY = (screenY-camera.y) / camera.zoom
+							
+								const n = createNote(boardX, boardY, board!.id, user!, "question")
+								n.type = "question"
+								saveNote(n)
+							}}
+						>Question</button>
 					</div>
 				</div>
 
@@ -667,11 +752,22 @@ const Canvas = () => {
 				</div>
 
 				{!isChatOpen && (
-					<button className="text-xl button blue-button">
+					<button
+						className="text-xl button blue-button"
+						onClick={() => setIsShareDialogOpen(true)}
+					>
 						Share
 					</button>
 				)}
 			</div>
+
+			{isShareDialogOpen && board && user && (
+				<BoardShareDialog
+					board={board}
+					user={user}
+					onClose={() => setIsShareDialogOpen(false)}
+				/>
+			)}
 
 			{!isChatOpen && (
 				<button
