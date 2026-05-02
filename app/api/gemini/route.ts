@@ -85,7 +85,45 @@ export async function POST(req: Request) {
 		)
 	}
 
+	const { data: arrows, error: arrowsError } = await supabase
+		.from("arrows")
+		.select("id,start_note_id,start_note_side,end_note_id,end_note_side")
+		.eq("board_id", boardId)
+
+	if (arrowsError) {
+		return Response.json(
+			{ error: "Failed to fetch arrows" },
+			{ status: 500 }
+		)
+	}
+
+	const noteById = new Map(notes.map(note => [note.id, note]))
 	const contextNotes = notes.filter(note => contextNoteIds.includes(note.id))
+	const directedConnections = arrows.map(arrow => {
+		const startNote = noteById.get(arrow.start_note_id)
+		const endNote = noteById.get(arrow.end_note_id)
+
+		return {
+			id: arrow.id,
+			start_note_id: arrow.start_note_id,
+			start_note_text: startNote?.text ?? "",
+			start_note_author_name: startNote?.author_name ?? "",
+			start_note_side: arrow.start_note_side,
+			end_note_id: arrow.end_note_id,
+			end_note_text: endNote?.text ?? "",
+			end_note_author_name: endNote?.author_name ?? "",
+			end_note_side: arrow.end_note_side,
+		}
+	})
+	const contextConnections = contextNoteIds.map((noteId: string) => ({
+		note_id: noteId,
+		note_text: noteById.get(noteId)?.text ?? "",
+		outgoing: directedConnections.filter(connection => connection.start_note_id === noteId),
+		incoming: directedConnections.filter(connection => connection.end_note_id === noteId),
+		connected_any_direction: directedConnections.filter(connection =>
+			connection.start_note_id === noteId || connection.end_note_id === noteId
+		),
+	}))
 
 	let contents = [
 		{
@@ -97,10 +135,18 @@ export async function POST(req: Request) {
 Board context:
 Notes: ${JSON.stringify(notes)}
 Sections: ${JSON.stringify(sections)}
+Directed arrows: ${JSON.stringify(directedConnections)}
 
 Current chat note context:
 Context note IDs: ${JSON.stringify(contextNoteIds)}
 Context notes: ${JSON.stringify(contextNotes)}
+Context note arrow connections: ${JSON.stringify(contextConnections)}
+
+Arrow direction rules:
+- An arrow points FROM start_note_id TO end_note_id.
+- If the user asks what a note "points to", "links to", or its outgoing connections, use arrows where start_note_id is that note.
+- If the user asks what points to a note or incoming connections, use arrows where end_note_id is that note.
+- If the user asks what a note is connected to without specifying direction, include both incoming and outgoing connections and label the direction.
 
 When the user refers to selected notes, added notes, attached notes, these notes, this context, or asks for a summary/comparison/explanation without naming a broader target, prioritize the current chat note context. When the user asks to highlight, find, show, or visually identify notes or sections, call highlight_objects with the exact noteIds and sectionIds from the board context. Multiple objects may be highlighted at once. If the user asks to stop or clear highlighting, call stop_highlighting. For normal questions that do not need visual highlighting, answer normally.`,
 				},

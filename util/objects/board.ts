@@ -8,6 +8,16 @@ export interface Board {
 	name: string; /* name of the board */
 	author_id: string /* OAuth user ID of board author / owner */
 	last_modified_by: string | null;
+	created_at: string | null;
+	last_updated_at: string | null;
+}
+
+export function normalizeBoard(board: Board): Board {
+	return {
+		...board,
+		created_at: board.created_at ?? null,
+		last_updated_at: board.last_updated_at ?? null,
+	}
 }
 
 interface BoardStore {
@@ -38,7 +48,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 		if (error) throw error
 
 		set(_ => ({
-			board: data,
+			board: normalizeBoard(data as Board),
 		}))
 	},
 	// TODO: prob just a rename board and sync with database
@@ -46,11 +56,13 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 		const { board } = get()
 		if (!board) return
 		const userId = useAuthStore.getState().user?.id ?? board.last_modified_by
+		const lastUpdatedAt = new Date().toISOString()
 		set(_ => ({
 			board: {
 				...board,
 				name: name,
 				last_modified_by: userId,
+				last_updated_at: lastUpdatedAt,
 			},
 		}))
 		const { error } = await supabase
@@ -58,6 +70,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 			.update({
 				name: name,
 				last_modified_by: userId,
+				last_updated_at: lastUpdatedAt,
 			})
 			.eq('id', board.id)
 
@@ -65,12 +78,14 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 	},
 	createBoard: async (name: string, user: User) => {
 		// make the board with supabasse
+		const now = new Date().toISOString()
 		const { data: board, error } = await supabase
 			.from("boards")
 			.insert({
 				name,
 				author: user.id,
 				last_modified_by: user.id,
+				last_updated_at: now,
 			})
 			.select()
 			.single()
@@ -78,6 +93,6 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 		// XXX: go to a 404 instead of throw error
 		if (error) throw error
 
-		return board
+		return normalizeBoard(board as Board)
 	},
 }))
