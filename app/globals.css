@@ -219,7 +219,7 @@ body {
   justify-content: center;
   height: 35px;
   width: 35px;
-  padding: 0.2rem;
+  padding: 0.3rem;
   border-radius: 0.75rem;
 }
 
@@ -271,14 +271,21 @@ body {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 0.5rem;
 
-  width: 320px;
-  padding: 1.5rem;
+  width: auto;
+  padding: 1rem;
   background: var(--white);
   border: 1px solid var(--grey);
   border-radius: 1rem;
   z-index: 100;
+}
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
 }
 
 .profile-area {
