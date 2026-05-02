@@ -105,6 +105,7 @@ const SectionTitle = (props: {
         lineHeight: "normal",
         padding: "4px 10px",
         pointerEvents: "auto",
+        zIndex: 600,
       }}
       onPointerDown={(e) => {
         e.stopPropagation();

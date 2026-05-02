@@ -262,11 +262,11 @@ export default function Home() {
 										<div className="board-info">
 											<p className="text-xl">{b.name}</p>
 											{activeTab === "shared" && b.owner_email && (
-												<p className="text-small text-grey">From {b.owner_name ?? b.owner_email}</p>
+												<p className="text-small text-grey subtext">From {b.owner_name ?? b.owner_email}</p>
 											)}
 											<div className="text-small text-grey">
 												{activeTab === "my" && (
-													<p className="text-small text-grey">
+													<p className="text-small text-grey subtext">
 														{b.last_updated_at
 															? `Last edited at ${new Date(b.last_updated_at).toLocaleString()}`
 															: "Just created"}
