@@ -10,10 +10,15 @@ import { useChatContextStore } from "@/util/objects/chat"
 import { DEFAULT_NOTE_HEIGHT, Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
 import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
+import { Roboto } from "next/font/google";
 
 const NOTE_TEXT_PADDING = 12
 const NOTE_AUTHOR_HEIGHT = 22
 
+const roboto = Roboto({
+  weight: "400",
+  subsets: ["latin"]
+})
 
 const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "cursor" | "note" | "arrow" | "section") => void }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
