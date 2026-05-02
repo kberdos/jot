@@ -1,61 +1,61 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useRef } from "react"
-import Link from "next/link"
+import { useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 
-import { useCameraStore } from "@/util/objects/camera"
-import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note"
-import { toCamera } from "@/util/pointerfunctions"
-import NoteObj from "./NoteCard"
-import { useBoardStore } from "@/util/objects/board"
-import { useAuthStore } from "@/util/auth/auth"
-import { ArrowLayer } from "./Arrow"
+import { useCameraStore } from "@/util/objects/camera";
+import { deleteSavedNote, saveNote, useNoteStore } from "@/util/objects/note";
+import { toCamera } from "@/util/pointerfunctions";
+import NoteObj from "./NoteCard";
+import { useBoardStore } from "@/util/objects/board";
+import { useAuthStore } from "@/util/auth/auth";
+import { ArrowLayer } from "./Arrow";
 import {
-	deleteSavedArrow,
-	deleteSavedArrowsForNote,
-	useArrowStore,
-} from "@/util/objects/arrow"
-import CollabLayer from "./Collab"
+  deleteSavedArrow,
+  deleteSavedArrowsForNote,
+  useArrowStore,
+} from "@/util/objects/arrow";
+import CollabLayer from "./Collab";
 
 import {
-	DEFAULT_SECTION_COLOR,
-	deleteSavedSection,
-	GhostSection,
-	noteIsInSection,
-	saveSection,
-	Section,
-	useSectionStore,
-} from "@/util/objects/section"
-import { GhostSectionComponent, SectionComponent } from "./Section"
+  DEFAULT_SECTION_COLOR,
+  deleteSavedSection,
+  GhostSection,
+  noteIsInSection,
+  saveSection,
+  Section,
+  useSectionStore,
+} from "@/util/objects/section";
+import { GhostSectionComponent, SectionComponent } from "./Section";
 
-const ZOOM_MIN = 0.5
-const ZOOM_MAX = 3
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
 
 type TouchPoint = {
-	x: number
-	y: number
-}
+  x: number;
+  y: number;
+};
 
 type PinchGesture = {
-	distance: number
-	midpoint: TouchPoint
-	camera: {
-		x: number
-		y: number
-		zoom: number
-	}
-}
+  distance: number;
+  midpoint: TouchPoint;
+  camera: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+};
 
 const getDistance = (a: TouchPoint, b: TouchPoint) =>
-	Math.hypot(a.x - b.x, a.y - b.y)
+  Math.hypot(a.x - b.x, a.y - b.y);
 
 const getMidpoint = (a: TouchPoint, b: TouchPoint): TouchPoint => ({
-	x: (a.x + b.x) / 2,
-	y: (a.y + b.y) / 2,
-})
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+});
 
 const clampZoom = (zoom: number) =>
-	Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN))
+  Math.min(ZOOM_MAX, Math.max(zoom, ZOOM_MIN));
 
 const Canvas = () => {
 	const { camera, setCamera, resetCamera } = useCameraStore()
