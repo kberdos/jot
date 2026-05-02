@@ -65,7 +65,9 @@ const Canvas = () => {
 		createNote,
 		updateNote,
 		activeNoteId,
+		highlightedNoteIds,
 		setActiveNote,
+		clearHighlightedNotes,
 		deleteNote,
 	} = useNoteStore()
 
@@ -90,8 +92,10 @@ const Canvas = () => {
 	const {
 		addSectionMode,
 		activeSectionId,
+		highlightedSectionIds,
 		setAddSectionMode,
 		setActiveSection,
+		clearHighlightedSections,
 		ghostSection,
 		setGhostSection,
 		createSection,
@@ -147,6 +151,11 @@ const Canvas = () => {
 		setActiveArrow(null)
 		setActiveSection(null)
 	}, [setActiveArrow, setActiveNote, setActiveSection])
+
+	const clearHighlights = useCallback(() => {
+		clearHighlightedNotes()
+		clearHighlightedSections()
+	}, [clearHighlightedNotes, clearHighlightedSections])
 
 	const startPinchGesture = () => {
 		const [firstTouch, secondTouch] = Array.from(touchPointers.current.values())
@@ -540,6 +549,22 @@ const Canvas = () => {
 			>
 				Reset View
 			</button>
+
+			{(highlightedNoteIds.length > 0 || highlightedSectionIds.length > 0) && (
+				<button
+					style={{
+						position: "absolute",
+						left: "50%",
+						bottom: 20,
+						transform: "translateX(-50%)",
+					}}
+					className="px-6 py-3 bg-white border border-[var(--grey)] rounded-[8px] text-xl shadow-[0_4px_10px_rgba(0,0,0,0.18)] hover:bg-[var(--light-grey)]"
+					onClick={clearHighlights}
+					onPointerDown={(e) => e.stopPropagation()}
+				>
+					Stop Highlighting
+				</button>
+			)}
 
 			<div className="toolbar">
 				<button

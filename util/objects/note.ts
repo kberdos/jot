@@ -27,9 +27,12 @@ export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 interface NoteStore {
 	notes: Note[];
 	activeNoteId: string | null;
+	highlightedNoteIds: string[];
 	// TODO: get note 
 	updateNote: (id: string, changes: Partial<Note>) => void;
 	setActiveNote: (id: string | null) => void;
+	highlightNotes: (ids: string[]) => void;
+	clearHighlightedNotes: () => void;
 	deleteNote: (id: string) => void;
 	loadNotes: (board_id: string) => Promise<void>;
 	createNote: (x: number, y: number, board_id: string, user: User) => Note;
@@ -87,6 +90,7 @@ export async function deleteSavedNote(id: string) {
 export const useNoteStore = create<NoteStore>((set, get) => ({
 	notes: [],
 	activeNoteId: null,
+	highlightedNoteIds: [],
 	updateNote: (id, changes) => {
 		set(state => ({
 			notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
@@ -97,10 +101,21 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			activeNoteId: id,
 		}))
 	},
+	highlightNotes: (ids) => {
+		set(_ => ({
+			highlightedNoteIds: Array.from(new Set(ids)),
+		}))
+	},
+	clearHighlightedNotes: () => {
+		set(_ => ({
+			highlightedNoteIds: [],
+		}))
+	},
 	deleteNote: (id) => {
 		set(state => ({
 			notes: state.notes.filter(n => n.id !== id),
 			activeNoteId: state.activeNoteId === id ? null : state.activeNoteId,
+			highlightedNoteIds: state.highlightedNoteIds.filter(noteId => noteId !== id),
 		}))
 	},
 	loadNotes: async (board_id: string) => {

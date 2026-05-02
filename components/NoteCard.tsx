@@ -17,6 +17,7 @@ const NOTE_AUTHOR_HEIGHT = 22
 const NoteObj = ({ note }: { note: Note }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
 	const activeNoteId = useNoteStore(state => state.activeNoteId)
+	const highlightedNoteIds = useNoteStore(state => state.highlightedNoteIds)
 	const setActiveNote = useNoteStore(state => state.setActiveNote)
 	const camera = useCameraStore(state => state.camera)
 
@@ -25,6 +26,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
 	const { sections, setActiveSection } = useSectionStore()
 	const isActive = activeNoteId === note.id
+	const isHighlighted = highlightedNoteIds.includes(note.id)
 	const [isEditingText, setIsEditingText] = useState(false)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -167,7 +169,11 @@ const NoteObj = ({ note }: { note: Note }) => {
 		>
 			<div style={{
 				backgroundColor: note.color,
-				border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
+				border: isActive
+					? "3px solid var(--blue)"
+					: isHighlighted
+						? "3px solid #000"
+						: "3px solid transparent",
 				width: `${note.width}px`,
 				height: `${note.height}px`,
 				boxSizing: "border-box",

@@ -149,11 +149,12 @@ const SectionTitle = (props: {
 
 export const SectionComponent = ({ section }: { section: Section }) => {
 	const camera = useCameraStore(state => state.camera)
-	const { updateSection, activeSectionId, setActiveSection } = useSectionStore()
+	const { updateSection, activeSectionId, highlightedSectionIds, setActiveSection } = useSectionStore()
 	const { updateNote, setActiveNote } = useNoteStore()
 	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
 	const user = useAuthStore(state => state.user)
 	const isActive = activeSectionId === section.id
+	const isHighlighted = highlightedSectionIds.includes(section.id)
 	const sectionRef = useRef(section)
 	const [isEditingTitle, setIsEditingTitle] = useState(false)
 
@@ -321,7 +322,11 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 		>
 			<div style={{
 				backgroundColor: section.color,
-				border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
+				border: isActive
+					? "3px solid var(--blue)"
+					: isHighlighted
+						? "3px solid #000"
+						: "3px solid transparent",
 				width: `${section.width}px`,
 				height: `${section.height}px`,
 				boxSizing: "border-box",
