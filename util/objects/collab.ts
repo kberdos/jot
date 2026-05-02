@@ -13,6 +13,7 @@ export interface CollabCursor {
 interface CollabStore {
 	cursors: CollabCursor[];
 	upsertCursor: (cursor: Partial<CollabCursor>) => void;
+	clearCursors: () => void;
 }
 
 export const useCollabStore = create<CollabStore>((set, get) => ({
@@ -20,16 +21,17 @@ export const useCollabStore = create<CollabStore>((set, get) => ({
 	upsertCursor: (cursor: Partial<CollabCursor>) => {
 		const { cursors } = get()
 		if (!cursors.find((c) => c.user_id === cursor.user_id)) {
-			set(_ => ({
+			set({
 				cursors: [...cursors, cursor as CollabCursor]
-			}))
+			})
 		} else {
 			set(state => ({
 				cursors: state.cursors.map(c => c.user_id === cursor.user_id ?
 					{ ...c, ...cursor } : c),
 			}))
 		}
-	}
+	},
+	clearCursors: () => {
+		set({ cursors: [] })
+	},
 }))
-
-

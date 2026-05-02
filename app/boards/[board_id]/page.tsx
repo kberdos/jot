@@ -23,7 +23,7 @@ export default function Home() {
   const { user } = useAuthStore()
   const userId = user?.id
   const { camera } = useCameraStore()
-  const { upsertCursor } = useCollabStore()
+  const { clearCursors, upsertCursor } = useCollabStore()
   const [accessState, setAccessState] = useState<"loading" | "ready" | "denied">("loading")
 
   const cameraRef = useRef(camera)
@@ -46,6 +46,7 @@ export default function Home() {
     let sendCursor: ReturnType<typeof throttle> | null = null
 
     const setupBoard = async () => {
+      clearCursors()
       setAccessState("loading")
 
       try {
@@ -195,6 +196,7 @@ export default function Home() {
       dbChannel?.unsubscribe()
       cursorChannelRef.current = null
       sendCursor?.cancel()
+      clearCursors()
     }
   }, [board_id, userId])
 
