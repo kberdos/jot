@@ -6,6 +6,9 @@ export const DEFAULT_NOTE_WIDTH = 200;
 // XXX: heights change dynamically based on text - can just use css styling
 export const DEFAULT_NOTE_HEIGHT = 200;
 const DEFAULT_NOTE_COLOR = "#FFF4BF";
+const DEFAULT_NOTE_TYPE: NoteType = "idea";
+
+export type NoteType = "question" | "idea";
 
 export interface Note {
   id: string;
@@ -20,7 +23,7 @@ export interface Note {
   author_name: string;
   last_modified_by: string | null;
   section_id?: string | null;
-  type: "question" | "idea";
+  type: NoteType;
 }
 
 export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
@@ -41,7 +44,7 @@ interface NoteStore {
     y: number,
     board_id: string,
     user: User,
-    type: "question" | "idea",
+    type: NoteType,
   ) => Note;
   addNote: (note: Note) => void;
 }
@@ -56,6 +59,18 @@ function getUserDisplayName(user: User): string {
         : undefined;
 
   return name || user.email || "Unknown";
+}
+
+function normalizeNote(note: Note & { type?: string | null }): Note {
+  return {
+    ...note,
+    text: note.text ?? "",
+    author_name: note.author_name ?? "Unknown",
+    last_modified_by: note.last_modified_by ?? null,
+    type: note.type === "question" || note.type === "idea"
+      ? note.type
+      : DEFAULT_NOTE_TYPE,
+  };
 }
 
 export async function saveNote(note: Note) {
@@ -74,6 +89,7 @@ export async function saveNote(note: Note) {
       author_name: note.author_name,
       last_modified_by: note.last_modified_by,
       section_id: note.section_id,
+      type: note.type,
     },
     { onConflict: "id" },
   );
@@ -136,12 +152,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     if (error) throw error;
     const notes = data as Note[];
     set((_) => ({
-      notes: notes.map((note) => ({
-        ...note,
-        text: note.text ?? "",
-        author_name: note.author_name ?? "Unknown",
-        last_modified_by: note.last_modified_by ?? null,
-      })),
+      notes: notes.map(normalizeNote),
     }));
   },
   createNote: (
@@ -149,7 +160,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     y,
     board_id: string,
     user: User,
-    type: "question" | "idea",
+    type: NoteType,
   ) => {
     const note = {
       id: crypto.randomUUID(),
@@ -175,12 +186,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     set((state) => ({
       notes: [
         ...state.notes,
-        {
-          ...note,
-          text: note.text ?? "",
-          author_name: note.author_name ?? "Unknown",
-          last_modified_by: note.last_modified_by ?? null,
-        },
+        normalizeNote(note),
       ],
     }));
   },

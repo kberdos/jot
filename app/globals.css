@@ -475,6 +475,18 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
+.board-card-selected {
+  border-color: var(--blue);
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+  box-shadow: 0 4px 10px rgba(75, 167, 239, 0.24);
+}
+
+.board-card:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .board-thumbnail {
   height: 180px;
   background: var(--light-grey);
@@ -491,4 +503,78 @@ body {
 .board-info {
   padding: 1rem 1.25rem;
   background: var(--white);
+}
+
+/* table view stuff */
+.table-view-section {
+  width: min(920px, 100%);
+}
+
+.table-view-title {
+  font-family: "Roboto", sans-serif;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.table-view-grid {
+  display: flex;
+  align-items: flex-start;
+  gap: 56px;
+}
+
+.table-view-section-small {
+  width: min(540px, 100%);
+}
+
+.database-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--light-grey);
+  color: var(--black);
+  font-size: 18px;
+}
+
+.database-table th,
+.database-table td {
+  border: 1px solid var(--black);
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.database-table th {
+  font-weight: 700;
+}
+
+.note-database-table th:nth-child(1),
+.note-database-table td:nth-child(1) {
+  width: 44px;
+}
+
+.note-database-table th:nth-child(2),
+.note-database-table td:nth-child(2) {
+  width: 170px;
+}
+
+.note-database-table th:nth-child(4),
+.note-database-table td:nth-child(4) {
+  width: 140px;
+}
+
+.note-database-table th:nth-child(5),
+.note-database-table td:nth-child(5) {
+  width: 180px;
+}
+
+.section-database-table th:nth-child(1),
+.section-database-table td:nth-child(1) {
+  width: 46px;
+}
+
+.section-database-table th:nth-child(3),
+.section-database-table td:nth-child(3) {
+  width: 180px;
 }
