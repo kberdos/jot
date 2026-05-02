@@ -6,6 +6,7 @@ import { getNodeOffsets } from "@/util/noteCoordinates"
 import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
 import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
+import { useChatContextStore } from "@/util/objects/chat"
 import { DEFAULT_NOTE_HEIGHT, Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
 import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
@@ -21,12 +22,14 @@ const NoteObj = ({ note }: { note: Note }) => {
 	const setActiveNote = useNoteStore(state => state.setActiveNote)
 	const camera = useCameraStore(state => state.camera)
 
-	const { board } = useBoardStore()
+	const { board, isChatOpen } = useBoardStore()
 	const { user } = useAuthStore()
+	const { addNoteContext, noteContextIds } = useChatContextStore()
 	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
 	const { sections, setActiveSection } = useSectionStore()
 	const isActive = activeNoteId === note.id
 	const isHighlighted = highlightedNoteIds.includes(note.id)
+	const isInChatContext = noteContextIds.includes(note.id)
 	const [isEditingText, setIsEditingText] = useState(false)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -167,6 +170,24 @@ const NoteObj = ({ note }: { note: Note }) => {
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 		>
+			{isChatOpen && isActive && (
+				<button
+					style={{
+						position: "absolute",
+						right: 0,
+						top: -34,
+					}}
+					className="z-[502] rounded-[8px] bg-white px-3 py-2 text-sm shadow-[0_2px_8px_rgba(0,0,0,0.18)] hover:bg-[var(--light-grey)]"
+					onPointerDown={(e) => e.stopPropagation()}
+					onPointerUp={(e) => e.stopPropagation()}
+					onClick={(e) => {
+						e.stopPropagation()
+						addNoteContext(note.id)
+					}}
+				>
+					{isInChatContext ? "Added" : "Add to chat"}
+				</button>
+			)}
 			<div style={{
 				backgroundColor: note.color,
 				border: isActive

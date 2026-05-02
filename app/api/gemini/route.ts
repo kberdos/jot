@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 		process.env.SUPABASE_SERVICE_ROLE_KEY!,
 	)
 
-	const { messages, boardId } = await req.json()
+	const { messages, boardId, contextNoteIds = [] } = await req.json()
 
 	const { data: notes, error: notesError } = await supabase
 		.from("notes")
@@ -85,6 +85,8 @@ export async function POST(req: Request) {
 		)
 	}
 
+	const contextNotes = notes.filter(note => contextNoteIds.includes(note.id))
+
 	let contents = [
 		{
 			role: "user",
@@ -96,7 +98,11 @@ Board context:
 Notes: ${JSON.stringify(notes)}
 Sections: ${JSON.stringify(sections)}
 
-When the user asks to highlight, find, show, or visually identify notes or sections, call highlight_objects with the exact noteIds and sectionIds from the board context. Multiple objects may be highlighted at once. If the user asks to stop or clear highlighting, call stop_highlighting. For normal questions that do not need visual highlighting, answer normally.`,
+Current chat note context:
+Context note IDs: ${JSON.stringify(contextNoteIds)}
+Context notes: ${JSON.stringify(contextNotes)}
+
+When the user refers to selected notes, added notes, attached notes, these notes, this context, or asks for a summary/comparison/explanation without naming a broader target, prioritize the current chat note context. When the user asks to highlight, find, show, or visually identify notes or sections, call highlight_objects with the exact noteIds and sectionIds from the board context. Multiple objects may be highlighted at once. If the user asks to stop or clear highlighting, call stop_highlighting. For normal questions that do not need visual highlighting, answer normally.`,
 				},
 			],
 		},
