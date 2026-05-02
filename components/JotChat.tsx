@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useRef, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 import { useChatContextStore } from "@/util/objects/chat";
