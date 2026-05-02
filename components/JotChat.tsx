@@ -4,6 +4,7 @@ import { useBoardStore } from "@/util/objects/board";
 import { useChatContextStore } from "@/util/objects/chat";
 import { NoteType, useNoteStore } from "@/util/objects/note";
 import { useSectionStore } from "@/util/objects/section";
+import { supabase } from "@/util/supabase/supabase";
 
 interface Message {
   role: "user" | "model";
@@ -213,9 +214,15 @@ export default function JotChat() {
     clearNoteContext();
     setLoading(true);
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
     const res = await fetch("/api/gemini", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         messages: newMessages,
         boardId: board!.id, // need a board

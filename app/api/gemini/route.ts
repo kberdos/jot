@@ -2,13 +2,181 @@ import {
 	GoogleGenAI,
 	Type,
 	FunctionCallingConfigMode,
+	type Tool,
 } from "@google/genai"
 import { createClient } from "@supabase/supabase-js"
 
 const ai = new GoogleGenAI({})
 const MODEL_NAME = "gemini-3.1-flash-lite-preview"
+const JOTCHAT_AUTHOR_NAME = "JotChat"
+const JOTCHAT_LAST_MODIFIED_BY = null
+const SECTION_GAP = 160
+const SECTION_PADDING_X = 72
+const SECTION_PADDING_TOP = 96
+const SECTION_PADDING_BOTTOM = 72
+const DUPLICATE_NOTE_GAP = 44
+const DEFAULT_SECTION_SIZE = 420
 
-const tools: any = [
+type BoardNote = {
+	id: string
+	text: string | null
+	author_id: string | null
+	author_name: string | null
+	section_id: string | null
+	x: number
+	y: number
+	width: number
+	height: number
+	color: string | null
+	type: "idea" | "question" | null
+}
+
+type BoardSection = {
+	id: string
+	title: string | null
+	x: number
+	y: number
+	width: number
+	height: number
+	color: string | null
+}
+
+type GeminiToolArgs = Record<string, unknown>
+
+type GeminiPart = {
+	text?: string
+	functionCall?: {
+		name?: string
+		args?: GeminiToolArgs
+	}
+}
+
+const getBearerToken = (req: Request) => {
+	const header = req.headers.get("authorization")
+	if (!header?.startsWith("Bearer ")) return null
+	return header.slice("Bearer ".length)
+}
+
+const getStringArrayArg = (args: GeminiToolArgs | undefined, key: string) => {
+	const value = args?.[key]
+	if (!Array.isArray(value)) return []
+	return value.filter((item): item is string => typeof item === "string")
+}
+
+const getStringArg = (args: GeminiToolArgs | undefined, key: string) => {
+	const value = args?.[key]
+	return typeof value === "string" ? value : undefined
+}
+
+const getContentBounds = (notes: BoardNote[], sections: BoardSection[]) => {
+	const objects = [
+		...notes.map(note => ({
+			x: note.x,
+			y: note.y,
+			width: note.width,
+			height: note.height,
+		})),
+		...sections.map(section => ({
+			x: section.x,
+			y: section.y,
+			width: section.width,
+			height: section.height,
+		})),
+	]
+
+	if (objects.length === 0) {
+		return {
+			minX: 0,
+			minY: 0,
+			maxX: DEFAULT_SECTION_SIZE,
+			maxY: DEFAULT_SECTION_SIZE,
+		}
+	}
+
+	return objects.reduce(
+		(bounds, object) => ({
+			minX: Math.min(bounds.minX, object.x),
+			minY: Math.min(bounds.minY, object.y),
+			maxX: Math.max(bounds.maxX, object.x + object.width),
+			maxY: Math.max(bounds.maxY, object.y + object.height),
+		}),
+		{
+			minX: Infinity,
+			minY: Infinity,
+			maxX: -Infinity,
+			maxY: -Infinity,
+		},
+	)
+}
+
+const createOrganizedSection = (
+	selectedNotes: BoardNote[],
+	allNotes: BoardNote[],
+	sections: BoardSection[],
+	boardId: string,
+	authorId: string,
+	sectionTitle?: string,
+) => {
+	const bounds = getContentBounds(allNotes, sections)
+	const columnCount = Math.max(1, Math.ceil(Math.sqrt(selectedNotes.length)))
+	const rowCount = Math.max(1, Math.ceil(selectedNotes.length / columnCount))
+	const maxNoteWidth = Math.max(...selectedNotes.map(note => note.width), 200)
+	const maxNoteHeight = Math.max(...selectedNotes.map(note => note.height), 200)
+	const cellWidth = maxNoteWidth + DUPLICATE_NOTE_GAP
+	const cellHeight = maxNoteHeight + DUPLICATE_NOTE_GAP
+	const sectionWidth =
+		SECTION_PADDING_X * 2 +
+		columnCount * maxNoteWidth +
+		(columnCount - 1) * DUPLICATE_NOTE_GAP
+	const sectionHeight =
+		SECTION_PADDING_TOP +
+		SECTION_PADDING_BOTTOM +
+		rowCount * maxNoteHeight +
+		(rowCount - 1) * DUPLICATE_NOTE_GAP
+	const sectionX = bounds.maxX + SECTION_GAP
+	const sectionY = bounds.minY
+	const sectionId = crypto.randomUUID()
+
+	const section = {
+		id: sectionId,
+		title: sectionTitle?.trim() || "Organized notes",
+		x: sectionX,
+		y: sectionY,
+		width: sectionWidth,
+		height: sectionHeight,
+		color: "#FFFFFF",
+		board_id: boardId,
+		author_id: authorId,
+		last_modified_by: JOTCHAT_LAST_MODIFIED_BY,
+	}
+
+	const notes = selectedNotes.map((note, index) => {
+		const column = index % columnCount
+		const row = Math.floor(index / columnCount)
+		const cellX = sectionX + SECTION_PADDING_X + column * cellWidth
+		const cellY = sectionY + SECTION_PADDING_TOP + row * cellHeight
+
+		return {
+			id: crypto.randomUUID(),
+			x: cellX + (maxNoteWidth - note.width) / 2,
+			y: cellY,
+			width: note.width,
+			height: note.height,
+			text: note.text ?? "",
+			color: note.color ?? "#FFF4BF",
+			board_id: boardId,
+			author_id: authorId,
+			author_name: JOTCHAT_AUTHOR_NAME,
+			last_modified_by: JOTCHAT_LAST_MODIFIED_BY,
+			section_id: sectionId,
+			type: note.type === "question" ? "question" : "idea",
+		}
+	})
+
+	return { section, notes }
+}
+
+const tools: Tool[] = [
 	{
 		functionDeclarations: [
 			{
@@ -49,6 +217,29 @@ const tools: any = [
 					required: ["responseText"],
 				},
 			},
+			{
+				name: "organize_notes_into_section",
+				description: "Duplicate relevant notes into a newly created section on the board. Use this when the user asks to organize, group, collect, cluster, or put notes related to a word/topic into a section. This tool must duplicate notes and must not move or edit the originals.",
+				parameters: {
+					type: Type.OBJECT,
+					properties: {
+						noteIds: {
+							type: Type.ARRAY,
+							description: "Exact IDs of existing notes to duplicate into the new section",
+							items: { type: Type.STRING },
+						},
+						sectionTitle: {
+							type: Type.STRING,
+							description: "Short title for the new section",
+						},
+						responseText: {
+							type: Type.STRING,
+							description: "Short message explaining what was organized",
+						},
+					},
+					required: ["noteIds", "sectionTitle", "responseText"],
+				},
+			},
 		],
 	},
 ]
@@ -60,10 +251,49 @@ export async function POST(req: Request) {
 	)
 
 	const { messages, boardId, contextNoteIds = [] } = await req.json()
+	const safeContextNoteIds = Array.isArray(contextNoteIds)
+		? contextNoteIds.filter((id): id is string => typeof id === "string")
+		: []
+	const token = getBearerToken(req)
+
+	if (!token) {
+		return Response.json({ error: "Missing auth token" }, { status: 401 })
+	}
+
+	const { data: authData, error: authError } = await supabase.auth.getUser(token)
+
+	if (authError || !authData.user) {
+		return Response.json({ error: "Invalid auth token" }, { status: 401 })
+	}
+
+	const currentUserId = authData.user.id
+
+	const { data: board, error: boardError } = await supabase
+		.from("boards")
+		.select("id,author")
+		.eq("id", boardId)
+		.single()
+
+	if (boardError || !board) {
+		return Response.json({ error: "Board not found" }, { status: 404 })
+	}
+
+	if (board.author !== currentUserId) {
+		const { data: membership, error: membershipError } = await supabase
+			.from("board_members")
+			.select("board_id")
+			.eq("board_id", boardId)
+			.eq("user_id", currentUserId)
+			.maybeSingle()
+
+		if (membershipError || !membership) {
+			return Response.json({ error: "You do not have access to this board" }, { status: 403 })
+		}
+	}
 
 	const { data: notes, error: notesError } = await supabase
 		.from("notes")
-		.select("id,text,author_name,section_id")
+		.select("id,text,author_id,author_name,section_id,x,y,width,height,color,type")
 		.eq("board_id", boardId)
 
 	if (notesError) {
@@ -75,7 +305,7 @@ export async function POST(req: Request) {
 
 	const { data: sections, error: sectionsError } = await supabase
 		.from("sections")
-		.select("id,title")
+		.select("id,title,x,y,width,height,color")
 		.eq("board_id", boardId)
 
 	if (sectionsError) {
@@ -97,9 +327,11 @@ export async function POST(req: Request) {
 		)
 	}
 
-	const noteById = new Map(notes.map(note => [note.id, note]))
-	const contextNotes = notes.filter(note => contextNoteIds.includes(note.id))
-	const directedConnections = arrows.map(arrow => {
+	const boardNotes = (notes ?? []) as BoardNote[]
+	const boardSections = (sections ?? []) as BoardSection[]
+	const noteById = new Map(boardNotes.map(note => [note.id, note]))
+	const contextNotes = boardNotes.filter(note => safeContextNoteIds.includes(note.id))
+	const directedConnections = (arrows ?? []).map(arrow => {
 		const startNote = noteById.get(arrow.start_note_id)
 		const endNote = noteById.get(arrow.end_note_id)
 
@@ -115,7 +347,7 @@ export async function POST(req: Request) {
 			end_note_side: arrow.end_note_side,
 		}
 	})
-	const contextConnections = contextNoteIds.map((noteId: string) => ({
+	const contextConnections = safeContextNoteIds.map((noteId: string) => ({
 		note_id: noteId,
 		note_text: noteById.get(noteId)?.text ?? "",
 		outgoing: directedConnections.filter(connection => connection.start_note_id === noteId),
@@ -125,7 +357,7 @@ export async function POST(req: Request) {
 		),
 	}))
 
-	let contents = [
+	const contents = [
 		{
 			role: "user",
 			parts: [
@@ -138,7 +370,7 @@ Sections: ${JSON.stringify(sections)}
 Directed arrows: ${JSON.stringify(directedConnections)}
 
 Current chat note context:
-Context note IDs: ${JSON.stringify(contextNoteIds)}
+Context note IDs: ${JSON.stringify(safeContextNoteIds)}
 Context notes: ${JSON.stringify(contextNotes)}
 Context note arrow connections: ${JSON.stringify(contextConnections)}
 
@@ -148,7 +380,14 @@ Arrow direction rules:
 - If the user asks what points to a note or incoming connections, use arrows where end_note_id is that note.
 - If the user asks what a note is connected to without specifying direction, include both incoming and outgoing connections and label the direction.
 
-When the user refers to selected notes, added notes, attached notes, these notes, this context, or asks for a summary/comparison/explanation without naming a broader target, prioritize the current chat note context. When the user asks to highlight, find, show, or visually identify notes or sections, call highlight_objects with the exact noteIds and sectionIds from the board context. Multiple objects may be highlighted at once. If the user asks to stop or clear highlighting, call stop_highlighting. For normal questions that do not need visual highlighting, answer normally.`,
+When the user refers to selected notes, added notes, attached notes, these notes, this context, or asks for a summary/comparison/explanation without naming a broader target, prioritize the current chat note context.
+
+Tool rules:
+- When the user asks to highlight, find, show, or visually identify notes or sections, call highlight_objects with the exact noteIds and sectionIds from the board context. Multiple objects may be highlighted at once.
+- If the user asks to stop or clear highlighting, call stop_highlighting.
+- When the user asks to organize, group, collect, cluster, or put notes related to a topic into a new section, call organize_notes_into_section with the exact note IDs to duplicate. Choose the relevant note IDs from note text, section context, chat note context, and board context. Do not call this tool unless the user wants the board changed.
+- The organize tool duplicates notes into a new section. It does not move or edit originals.
+- For normal questions that do not need visual highlighting or board changes, answer normally.`,
 				},
 			],
 		},
@@ -170,18 +409,11 @@ When the user refers to selected notes, added notes, attached notes, these notes
 			},
 		})
 
-		const parts = response.candidates?.[0]?.content?.parts ?? []
+		const parts = (response.candidates?.[0]?.content?.parts ?? []) as GeminiPart[]
 
 		const functionCallPart = parts.find(
-			(p: any) => p.functionCall?.name
-		) as
-			| {
-				functionCall: {
-					name: string
-					args: any
-				}
-			}
-			| undefined
+			(part) => part.functionCall?.name
+		)
 
 		// call the tools
 		if (functionCallPart?.functionCall) {
@@ -189,24 +421,85 @@ When the user refers to selected notes, added notes, attached notes, these notes
 
 			if (name === "highlight_objects") {
 				return Response.json({
-					text: args?.responseText ?? "Highlighted matching objects.",
-					highlightNoteIds: Array.isArray(args?.noteIds) ? args.noteIds : [],
-					highlightSectionIds: Array.isArray(args?.sectionIds) ? args.sectionIds : [],
+					text: getStringArg(args, "responseText") ?? "Highlighted matching objects.",
+					highlightNoteIds: getStringArrayArg(args, "noteIds"),
+					highlightSectionIds: getStringArrayArg(args, "sectionIds"),
 				})
 			}
 
 			if (name === "stop_highlighting") {
 				return Response.json({
-					text: args?.responseText ?? "Stopped highlighting.",
+					text: getStringArg(args, "responseText") ?? "Stopped highlighting.",
 					highlightNoteIds: [],
 					highlightSectionIds: [],
 					clearHighlights: true,
 				})
 			}
+
+			if (name === "organize_notes_into_section") {
+				const requestedIds = getStringArrayArg(args, "noteIds")
+				const selectedNotes = requestedIds
+					.map((id: string) => noteById.get(id))
+					.filter((note: BoardNote | undefined): note is BoardNote => Boolean(note))
+
+				if (selectedNotes.length === 0) {
+					return Response.json({
+						text: "I could not find matching notes to organize.",
+					})
+				}
+
+				const { section, notes: duplicatedNotes } = createOrganizedSection(
+					selectedNotes,
+					boardNotes,
+					boardSections,
+					boardId,
+					currentUserId,
+					getStringArg(args, "sectionTitle"),
+				)
+
+				const { error: sectionInsertError } = await supabase
+					.from("sections")
+					.insert(section)
+
+				if (sectionInsertError) {
+					console.error("[jotchat:organize] failed to create section", sectionInsertError)
+					return Response.json(
+						{ error: "Failed to create organized section" },
+						{ status: 500 },
+					)
+				}
+
+				const { error: notesInsertError } = await supabase
+					.from("notes")
+					.insert(duplicatedNotes)
+
+				if (notesInsertError) {
+					console.error("[jotchat:organize] failed to duplicate notes", notesInsertError)
+					await supabase.from("sections").delete().eq("id", section.id)
+					return Response.json(
+						{ error: "Failed to duplicate notes into section" },
+						{ status: 500 },
+					)
+				}
+
+				await supabase
+					.from("boards")
+					.update({
+						last_updated_at: new Date().toISOString(),
+						last_modified_by: JOTCHAT_LAST_MODIFIED_BY,
+					})
+					.eq("id", boardId)
+
+				return Response.json({
+					text: getStringArg(args, "responseText") ?? `Organized ${duplicatedNotes.length} notes into a new section.`,
+					highlightNoteIds: duplicatedNotes.map(note => note.id),
+					highlightSectionIds: [section.id],
+				})
+			}
 		}
 
 		// final response 
-		const textPart = parts.find((p: any) => p.text)
+		const textPart = parts.find((part) => part.text)
 
 		if (textPart?.text) {
 			return Response.json({ text: textPart.text })
