@@ -634,7 +634,6 @@ const Canvas = () => {
 								const boardX = (screenX - camera.x) / camera.zoom
 								const boardY = (screenY - camera.y) / camera.zoom
 								const n = createNote(boardX, boardY, board!.id, user!, "idea")
-								n.type = "idea"
 								saveNote(n)
 							}}
 						>Idea</button>
@@ -654,7 +653,6 @@ const Canvas = () => {
 								const boardY = (screenY - camera.y) / camera.zoom
 
 								const n = createNote(boardX, boardY, board!.id, user!, "question")
-								n.type = "question"
 								saveNote(n)
 							}}
 						>Question</button>
