@@ -20,6 +20,26 @@ async function getBoards(user: User): Promise<Board[]> {
   return (data as Board[]).map(normalizeBoard);
 }
 
+async function getSharedBoards(): Promise<Board[]> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  if (!token) return [];
+
+  const response = await fetch("/api/shared-boards", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error ?? "Failed to load shared boards");
+  }
+
+  return (data.boards as Board[]).map(normalizeBoard);
+}
+
 export default function Home() {
   const { user } = useAuthStore();
   const [boards, setBoards] = useState<Board[]>([]);
@@ -34,12 +54,14 @@ export default function Home() {
     if (!user) return;
 
     const load = async () => {
-      const b = await getBoards(user);
+      const b = activeTab === "my"
+        ? await getBoards(user)
+        : await getSharedBoards();
       setBoards(b);
     };
 
     load();
-  }, [user]);
+  }, [user, activeTab]);
 
   const handleNewBoard = async () => {
     const name = "New Board";
@@ -150,6 +172,18 @@ export default function Home() {
                     </div>
                     <div className="board-info">
                       <p className="text-xl">{b.name}</p>
+                      {activeTab === "shared" && b.owner_email && (
+                        <p className="text-small text-grey">From {b.owner_email}</p>
+                      )}
+                      <p className="text-small text-grey">
+                      {activeTab === "my" && (
+                      <p className="text-small text-grey">
+                        {b.last_updated_at
+                          ? `Last edited at ${new Date(b.last_updated_at).toLocaleString()}`
+                          : "Just created"}
+                      </p>
+                      )}
+                      </p>
                     </div>
                   </button>
                 </div>

@@ -221,6 +221,7 @@ body {
   width: 35px;
   padding: 0.3rem;
   border-radius: 0.75rem;
+  cursor: pointer;
 }
 
 /* hover state */
@@ -397,13 +398,13 @@ body {
 /* hidden by default */
 .note-hover-menu {
   position: absolute;
-  left: 30px;
+  left: 35px;
   top: 50%;
   transform: translateY(-50%);
 
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 
   opacity: 0;
   pointer-events: auto;

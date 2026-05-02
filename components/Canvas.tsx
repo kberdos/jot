@@ -27,6 +27,7 @@ import {
   useSectionStore,
 } from "@/util/objects/section";
 import { GhostSectionComponent, SectionComponent } from "./Section";
+import BoardShareDialog from "./BoardShareDialog";
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -103,6 +104,7 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
+	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -638,7 +640,7 @@ const Canvas = () => {
 									// convert to board coordinates
 									const boardX = (screenX-camera.x) / camera.zoom
 									const boardY = (screenY-camera.y) / camera.zoom
-									const n = createNote(boardX, boardY, board!.id, user!)
+									const n = createNote(boardX, boardY, board!.id, user!, "idea")
 									n.type = "idea"
 									saveNote(n)
 									setActiveTool("cursor")
@@ -659,7 +661,7 @@ const Canvas = () => {
 								const boardX = (screenX-camera.x) / camera.zoom
 								const boardY = (screenY-camera.y) / camera.zoom
 							
-								const n = createNote(boardX, boardY, board!.id, user!)
+								const n = createNote(boardX, boardY, board!.id, user!, "question")
 								n.type = "question"
 								saveNote(n)
 								setActiveTool("cursor")
@@ -749,11 +751,22 @@ const Canvas = () => {
 				</div>
 
 				{!isChatOpen && (
-					<button className="text-xl button blue-button">
+					<button
+						className="text-xl button blue-button"
+						onClick={() => setIsShareDialogOpen(true)}
+					>
 						Share
 					</button>
 				)}
 			</div>
+
+			{isShareDialogOpen && board && user && (
+				<BoardShareDialog
+					board={board}
+					user={user}
+					onClose={() => setIsShareDialogOpen(false)}
+				/>
+			)}
 
 			{!isChatOpen && (
 				<button
