@@ -103,7 +103,6 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
-
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -168,6 +167,8 @@ const Canvas = () => {
 			camera: cameraRef.current,
 		}
 	}
+
+
 
 	const handlePointerMove = (e: React.PointerEvent) => {
 		if (e.pointerType === "touch") {
@@ -568,23 +569,11 @@ const Canvas = () => {
 
 			<div className="toolbar">
 				<button
+					
 					className="icon"
 					onPointerDown={(e) => e.stopPropagation()}
 					onClick={() => {
 						clearSelections()
-
-						const n = createNote(0, 0, board!.id, user!)
-						const section = sections.find((s) => noteIsInSection(n, s))
-
-						if (section) {
-							n.section_id = section.id
-							updateNote(n.id, {
-								section_id: section.id,
-								last_modified_by: user!.id,
-							})
-						}
-
-						saveNote(n)
 					}}
 				>
 					<svg
@@ -603,10 +592,23 @@ const Canvas = () => {
 
 				<div className="note-wrapper">
 					<button
-						onClick={() => {
+						onClick={(e) => {
+							e.stopPropagation()
 							clearSelections()
-							const n = createNote(0, 0, board!.id, user!)
-							saveNote(n)
+							// const n = createNote(0, 0, board!.id, user!)
+							// const rect = canvasRef.current!.getBoundingClientRect()
+
+							// // center of visible screen
+							// const screenX = rect.width / 2
+							// const screenY = rect.height / 2
+						  
+							// // convert to board coordinates
+							// const boardX = (screenX-camera.x) / camera.zoom
+							// const boardY = (screenY-camera.y) / camera.zoom
+						  
+							// const n = createNote(boardX, boardY, board!.id, user!)
+	
+							// saveNote(n)
 						}}
 						onPointerDown={(e) => e.stopPropagation()}
 						className="icon"
@@ -626,8 +628,43 @@ const Canvas = () => {
 					</button>
 
 					<div className="note-hover-menu">
-						<button className="pill idea">Idea</button>
-						<button className="pill question">Question</button>
+						<button className="pill idea"
+								onClick={(e) => {
+									e.stopPropagation()
+									console.log("hiiii")
+									const rect = canvasRef.current!.getBoundingClientRect()
+
+									// center of visible screen
+									const screenX = rect.width / 2
+									const screenY = rect.height / 2
+								
+									// convert to board coordinates
+									const boardX = (screenX-camera.x) / camera.zoom
+									const boardY = (screenY-camera.y) / camera.zoom
+									const n = createNote(boardX, boardY, board!.id, user!)
+									n.type = "idea"
+									saveNote(n)
+								}}
+								>Idea</button>
+						<button className="pill question"
+							onClick={(e) => {
+								e.stopPropagation()
+								console.log("hello")
+								const rect = canvasRef.current!.getBoundingClientRect()
+
+								// center of visible screen
+								const screenX = rect.width / 2
+								const screenY = rect.height / 2
+							
+								// convert to board coordinates
+								const boardX = (screenX-camera.x) / camera.zoom
+								const boardY = (screenY-camera.y) / camera.zoom
+							
+								const n = createNote(boardX, boardY, board!.id, user!)
+								n.type = "question"
+								saveNote(n)
+							}}
+						>Question</button>
 					</div>
 				</div>
 
