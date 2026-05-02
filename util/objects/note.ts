@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { supabase } from "@/util/supabase/supabase";
 import { User } from "@supabase/supabase-js";
+import { touchBoard } from "./board";
 
 export const DEFAULT_NOTE_WIDTH = 200;
 // XXX: heights change dynamically based on text - can just use css styling
@@ -102,12 +103,16 @@ export async function saveNote(note: Note) {
     });
     throw error;
   }
+  await touchBoard(note.board_id, note.last_modified_by);
 }
 
-export async function deleteSavedNote(id: string) {
+export async function deleteSavedNote(id: string, boardId?: string, lastModifiedBy?: string | null) {
   const { error } = await supabase.from("notes").delete().eq("id", id);
 
   if (error) throw error;
+  if (boardId) {
+    await touchBoard(boardId, lastModifiedBy);
+  }
 }
 
 export const useNoteStore = create<NoteStore>((set, get) => ({

@@ -17,26 +17,93 @@ interface Message {
 }
 
 const renderInlineMarkdown = (text: string) => {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
 
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return <strong key={index}>{part.slice(2, -2)}</strong>;
     }
 
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={index}
+          className="rounded-[4px] bg-white px-1 py-[1px] font-mono text-[0.92em]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
     return part;
   });
 };
 
+const renderHeader = (level: number, content: string, key: number) => {
+  const children = renderInlineMarkdown(content);
+
+  if (level === 1) {
+    return <h1 key={key} className="text-xl font-semibold">{children}</h1>;
+  }
+
+  if (level === 2) {
+    return <h2 key={key} className="text-large font-semibold">{children}</h2>;
+  }
+
+  if (level === 3) {
+    return <h3 key={key} className="text-sm font-semibold">{children}</h3>;
+  }
+
+  if (level === 4) {
+    return <h4 key={key} className="text-sm font-semibold">{children}</h4>;
+  }
+
+  if (level === 5) {
+    return <h5 key={key} className="text-sm font-semibold">{children}</h5>;
+  }
+
+  return <h6 key={key} className="text-sm font-semibold">{children}</h6>;
+};
+
 const ChatText = ({ text }: { text: string }) => {
-  const lines = text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = text.split(/\n/);
   const blocks: React.ReactNode[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const codeFenceMatch = line.match(/^```.*$/);
+    if (codeFenceMatch) {
+      const codeLines: string[] = [];
+      i++;
+
+      while (i < lines.length && !lines[i].trim().startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+
+      blocks.push(
+        <pre
+          key={blocks.length}
+          className="overflow-x-auto rounded-[6px] bg-white p-3 font-mono text-[11px] leading-relaxed"
+        >
+          <code>{codeLines.join("\n")}</code>
+        </pre>,
+      );
+      continue;
+    }
+
+    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+
+      blocks.push(renderHeader(level, content, blocks.length));
+      continue;
+    }
+
     const bulletMatch = line.match(/^[-*]\s+(.+)$/);
     const numberedMatch = line.match(/^\d+\.\s+(.+)$/);
 
