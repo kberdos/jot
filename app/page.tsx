@@ -241,8 +241,8 @@ export default function Home() {
 										<button onClick={() => setShowSignOut(false)}>
 											<svg
 												xmlns="http://www.w3.org/2000/svg"
-												width="12"
-												height="12"
+												width="10"
+												height="10"
 												viewBox="0 0 12 12"
 												fill="none"
 											>
@@ -292,45 +292,56 @@ export default function Home() {
 								Create new board
 							</button>
 						</div>
-						<div className="boards-grid">
-							{boards.map((b) => (
-								<div key={b.id}>
-									<button
-										className={`board-card ${selectedBoardId === b.id ? "board-card-selected" : ""
-											}`}
-										disabled={deletingBoardId === b.id}
-										aria-pressed={selectedBoardId === b.id}
-										onClick={(e) => {
-											e.stopPropagation();
-											setSelectedBoardId(b.id);
-										}}
-										onDoubleClick={(e) => {
-											e.stopPropagation();
-											router.push(`/boards/${b.id}`);
-										}}
-									>
-										<div className="board-thumbnail">
-											<BoardPreview data={boardPreviews[b.id]} />
-										</div>
-										<div className="board-info">
-											<p className="text-xl">{b.name}</p>
-											{activeTab === "shared" && b.owner_email && (
-												<p className="text-small text-grey subtext">From {b.owner_name ?? b.owner_email}</p>
-											)}
-											<div className="text-small text-grey">
-												{activeTab === "my" && (
-													<p className="text-small text-grey subtext">
-														{b.last_updated_at
-															? `Last edited at ${new Date(b.last_updated_at).toLocaleString()}`
-															: "Just created"}
-													</p>
-												)}
-											</div>
-										</div>
-									</button>
-								</div>
-							))}
-						</div>
+						
+              {boards.length === 0 ? (
+                <div className="w-full flex items-center justify-center">
+                  <p className="text-grey text-xl">
+                    {activeTab === "my"
+                      ? "You have no boards. Wanna fix that?"
+                      : "No one’s shared anything with you… awkward."}
+                  </p>
+                </div>
+              ) : (
+              <div className="boards-grid">
+                {boards.map((b) => (
+                  <div key={b.id}>
+                    <button
+                      className={`board-card ${selectedBoardId === b.id ? "board-card-selected" : ""
+                        }`}
+                      disabled={deletingBoardId === b.id}
+                      aria-pressed={selectedBoardId === b.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBoardId(b.id);
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/boards/${b.id}`);
+                      }}
+                    >
+                      <div className="board-thumbnail">
+                        <BoardPreview data={boardPreviews[b.id]} />
+                      </div>
+                      <div className="board-info">
+                        <p className="text-xl">{b.name}</p>
+                        {activeTab === "shared" && b.owner_email && (
+                          <p className="text-small text-grey subtext">From {b.owner_name ?? b.owner_email}</p>
+                        )}
+                        <div className="text-small text-grey">
+                          {activeTab === "my" && (
+                            <p className="text-small text-grey subtext">
+                              {b.last_updated_at
+                                ? `Last edited at ${new Date(b.last_updated_at).toLocaleString()}`
+                                : "Just created"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                ))}
+						  </div>
+            )}
 					</main>
 				</div>
 			) : (
