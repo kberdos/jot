@@ -2,21 +2,10 @@
 import { useRef, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 import { useChatContextStore } from "@/util/objects/chat";
-import { NoteType, useNoteStore } from "@/util/objects/note";
+import type { ChatMessage } from "@/util/objects/chat";
+import { useNoteStore } from "@/util/objects/note";
 import { useSectionStore } from "@/util/objects/section";
 import { supabase } from "@/util/supabase/supabase";
-
-interface Message {
-  role: "user" | "model";
-  parts: [{ text: string }];
-  contextNotes?: {
-    id: string;
-    text: string;
-    author_name: string;
-    color: string;
-    type: NoteType;
-  }[];
-}
 
 const renderInlineMarkdown = (text: string) => {
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
@@ -147,8 +136,6 @@ const ChatText = ({ text }: { text: string }) => {
 };
 
 export default function JotChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { board, setIsChatOpen } = useBoardStore();
@@ -161,8 +148,15 @@ export default function JotChat() {
   const clearHighlightedSections = useSectionStore(
     (state) => state.clearHighlightedSections,
   );
-  const { clearNoteContext, noteContextIds, removeNoteContext } =
-    useChatContextStore();
+  const {
+    clearNoteContext,
+    input,
+    messages,
+    noteContextIds,
+    removeNoteContext,
+    setInput,
+    setMessages,
+  } = useChatContextStore();
   const contextNotes = noteContextIds
     .map((id) => notes.find((note) => note.id === id))
     .filter((note) => note !== undefined);
@@ -200,7 +194,7 @@ export default function JotChat() {
       color: note.color,
       type: note.type,
     }));
-    const newMessages: Message[] = [
+    const newMessages: ChatMessage[] = [
       ...messages,
       {
         role: "user",
@@ -332,38 +326,36 @@ export default function JotChat() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-        {messages.length === 0 && (
-          <div className="text-sm text-black leading-relaxed space-y-3">
-            <p>
-              Hi! I am here to assist you in understanding your Jot board. Some
-              things that I can do include:
-            </p>
+        <div className="text-sm text-black leading-relaxed space-y-3">
+          <p>
+            Hi! I am here to assist you in understanding your Jot board. Some
+            things that I can do include:
+          </p>
 
-            <ul className="list-disc ml-5 space-y-1">
-              <li>
-                <b>Find & highlight:</b> search for notes containing or related
-                to a word/topic
-              </li>
-              <li>
-                <b>Summarize:</b> get a brief summary of notes containing or
-                related to a word/topic
-              </li>
-              <li>
-                <b>Organize:</b> duplicate and group notes containing or related
-                to a word/topic into a new section
-              </li>
-              <li>
-                <b>Explore connections:</b> select a note and see how it
-                connects to others
-              </li>
-            </ul>
+          <ul className="list-disc ml-5 space-y-1">
+            <li>
+              <b>Find & highlight:</b> search for notes containing or related
+              to a word/topic
+            </li>
+            <li>
+              <b>Summarize:</b> get a brief summary of notes containing or
+              related to a word/topic
+            </li>
+            <li>
+              <b>Organize:</b> duplicate and group notes containing or related
+              to a word/topic into a new section
+            </li>
+            <li>
+              <b>Explore connections:</b> select a note and see how it
+              connects to others
+            </li>
+          </ul>
 
-            <p className="text-grey text-xs">
-              Tip: Click any note and choose “Use in chat” to focus action on
-              that specific note.
-            </p>
-          </div>
-        )}
+          <p className="text-grey text-xs">
+            Tip: Click any note and choose “Use in chat” to focus action on
+            that specific note.
+          </p>
+        </div>
         {messages.map((m, i) => (
           <div
             key={i}
