@@ -112,6 +112,8 @@ const Canvas = () => {
 	const touchPointers = useRef(new Map<number, TouchPoint>())
 	const pinchGesture = useRef<PinchGesture | null>(null)
 	const gestureStart = useRef<PinchGesture | null>(null)
+	const [activeTool, setActiveTool] = useState<"cursor" | "note" | "arrow" | "section">("cursor")
+
 
 	cameraRef.current = camera
 	activeNoteIdRef.current = activeNoteId
@@ -146,6 +148,11 @@ const Canvas = () => {
 		setActiveArrow(null)
 		setActiveSection(null)
 	}, [setActiveArrow, setActiveNote, setActiveSection])
+
+	const resetToCursor = useCallback(() => {
+		clearSelections()
+		setActiveTool("cursor")
+	}, [clearSelections])
 
 	const clearHighlights = useCallback(() => {
 		clearHighlightedNotes()
@@ -263,6 +270,7 @@ const Canvas = () => {
 
 			setGhostSection(undefined)
 			setAddSectionMode("NONE")
+			setActiveTool("cursor") 
 			createSection(section)
 
 			const containedNotes = notes.filter((note) =>
@@ -292,12 +300,14 @@ const Canvas = () => {
 	}
 
 	const handleEscape = useCallback(() => {
+		resetToCursor()
 		clearSelections()
 		setAddArrowMode("NONE")
 		setGhostArrow(undefined)
 		setAddSectionMode("NONE")
 		setGhostSection(undefined)
 	}, [
+		resetToCursor,
 		clearSelections,
 		setAddArrowMode,
 		setGhostArrow,
@@ -498,7 +508,7 @@ const Canvas = () => {
 				className="relative"
 			>
 				{notes.map((note) => (
-					<NoteObj key={note.id} note={note} />
+					<NoteObj key={note.id} note={note} setActiveTool={setActiveTool}/>
 				))}
 
 				{sections.map((section) => (
@@ -559,12 +569,10 @@ const Canvas = () => {
 
 			<div className="toolbar">
 				<button
-
-					className="icon"
+					
+					className={`icon ${activeTool === "cursor" ? "active" : ""}`}
 					onPointerDown={(e) => e.stopPropagation()}
-					onClick={() => {
-						clearSelections()
-					}}
+					onClick={() => resetToCursor()}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -580,25 +588,12 @@ const Canvas = () => {
 					</svg>
 				</button>
 
-				<div className="note-wrapper">
+				<div className={`note-wrapper ${activeTool === "note" ? "active" : ""}`}>
 					<button
 						onClick={(e) => {
 							e.stopPropagation()
 							clearSelections()
-							// const n = createNote(0, 0, board!.id, user!)
-							// const rect = canvasRef.current!.getBoundingClientRect()
-
-							// // center of visible screen
-							// const screenX = rect.width / 2
-							// const screenY = rect.height / 2
-
-							// // convert to board coordinates
-							// const boardX = (screenX-camera.x) / camera.zoom
-							// const boardY = (screenY-camera.y) / camera.zoom
-
-							// const n = createNote(boardX, boardY, board!.id, user!)
-
-							// saveNote(n)
+							setActiveTool("note")
 						}}
 						onPointerDown={(e) => e.stopPropagation()}
 						className="icon"
@@ -620,23 +615,25 @@ const Canvas = () => {
 					<div className="note-hover-menu">
 
 						<button className="pill idea"
-							onPointerDown={(e) => e.stopPropagation()}
-							onClick={(e) => {
-								e.stopPropagation()
-								console.log("hiiii")
-								const rect = canvasRef.current!.getBoundingClientRect()
+								onPointerDown={(e) => e.stopPropagation()}
+								onClick={(e) => {
+									e.stopPropagation()
+									console.log("hiiii")
+									const rect = canvasRef.current!.getBoundingClientRect()
 
-								// center of visible screen
-								const screenX = rect.width / 2
-								const screenY = rect.height / 2
-
-								// convert to board coordinates
-								const boardX = (screenX - camera.x) / camera.zoom
-								const boardY = (screenY - camera.y) / camera.zoom
-								const n = createNote(boardX, boardY, board!.id, user!, "idea")
-								saveNote(n)
-							}}
-						>Idea</button>
+									// center of visible screen
+									const screenX = rect.width / 2
+									const screenY = rect.height / 2
+								
+									// convert to board coordinates
+									const boardX = (screenX-camera.x) / camera.zoom
+									const boardY = (screenY-camera.y) / camera.zoom
+									const n = createNote(boardX, boardY, board!.id, user!, "idea")
+									n.type = "idea"
+									saveNote(n)
+									setActiveTool("cursor")
+								}}
+								>Idea</button>
 						<button className="pill question"
 							onPointerDown={(e) => e.stopPropagation()}
 							onClick={(e) => {
@@ -654,6 +651,7 @@ const Canvas = () => {
 
 								const n = createNote(boardX, boardY, board!.id, user!, "question")
 								saveNote(n)
+								setActiveTool("cursor")
 							}}
 						>Question</button>
 					</div>
@@ -663,9 +661,10 @@ const Canvas = () => {
 					onClick={() => {
 						clearSelections()
 						setAddArrowMode("ACTIVE")
+						setActiveTool("arrow")
 					}}
 					onPointerDown={(e) => e.stopPropagation()}
-					className="icon"
+					className={`icon ${activeTool === "arrow" ? "active" : ""}`}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -681,11 +680,12 @@ const Canvas = () => {
 				</button>
 
 				<button
-					className="icon"
+					className={`icon ${activeTool === "section" ? "active" : ""}`}
 					onPointerDown={(e) => e.stopPropagation()}
 					onClick={() => {
 						clearSelections()
 						setAddSectionMode("ACTIVE")
+						setActiveTool("section")
 					}}
 				>
 					<svg
