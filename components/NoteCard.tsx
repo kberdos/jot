@@ -12,7 +12,7 @@ import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
 import { Roboto } from "next/font/google";
 
-const NOTE_TEXT_PADDING = 12
+const NOTE_TEXT_PADDING = 15
 const NOTE_AUTHOR_HEIGHT = 22
 
 const roboto = Roboto({
@@ -206,12 +206,11 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 			<div 
 				className={`note ${note.type}`}
 				style={{
-					// backgroundColor: note.color,
-					border: isActive
+					outline: isActive
 						? "3px solid var(--blue)"
 						: isHighlighted
 							? "3px solid #000"
-							: "3px solid transparent",
+							: "none",
 					width: `${note.width}px`,
 					height: `${note.height}px`,
 					boxSizing: "border-box",
@@ -232,15 +231,18 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 						fontWeight: 400,
 						lineHeight: "normal",
 						textAlign: "left",
-						background: isEditingText ? "rgba(255, 255, 255, 0.22)" : "transparent",
+						background:  "transparent",
 						border: "none",
-						borderRadius: "3px",
-						outline: isEditingText ? "1px solid rgba(0, 122, 255, 0.28)" : "none",
+						outline: "none",
 						outlineOffset: "-1px",
 						resize: "none",
 						overflow: "hidden",
-						width: "100%",
-						height: `calc(100% - ${NOTE_AUTHOR_HEIGHT}px)`,
+						position: "absolute",
+						left: 0,
+						top: 0,
+						right: 0,
+						/*width: "100%",*/
+						/*height: `calc(100% - ${NOTE_AUTHOR_HEIGHT}px)`,*/
 						padding: `${NOTE_TEXT_PADDING}px`,
 						boxSizing: "border-box",
 						cursor: isEditingText ? "text" : "default",
@@ -282,7 +284,7 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 						position: "absolute",
 						left: NOTE_TEXT_PADDING,
 						right: NOTE_TEXT_PADDING,
-						bottom: 8,
+						bottom: NOTE_TEXT_PADDING - 1,
 						color: "#7B7B7B",
 						textAlign: "left",
 						fontFamily: "Roboto",

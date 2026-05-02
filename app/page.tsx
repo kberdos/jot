@@ -7,8 +7,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Board } from "@/util/objects/board";
 import { supabase } from "@/util/supabase/supabase";
 import { User } from "@supabase/supabase-js";
-import Image from "next/image";
-import thumbnail from "../assets/dummy-thumbnail.png";
+import BoardPreview, { BoardPreviewData } from "@/components/BoardPreview";
+import { Note } from "@/util/objects/note";
+import { Section } from "@/util/objects/section";
+import { Arrow } from "@/util/objects/arrow";
+
+type BoardPreviewMap = Record<string, BoardPreviewData>;
 
 async function getBoards(user: User): Promise<Board[]> {
 	const { data, error } = await supabase
@@ -40,37 +44,107 @@ async function getSharedBoards(): Promise<Board[]> {
 	return (data.boards as Board[]).map(normalizeBoard);
 }
 
+async function getBoardPreviews(boardIds: string[]): Promise<BoardPreviewMap> {
+	if (boardIds.length === 0) return {};
+
+	const [notesResult, sectionsResult, arrowsResult] = await Promise.all([
+		supabase.from("notes").select("*").in("board_id", boardIds),
+		supabase.from("sections").select("*").in("board_id", boardIds),
+		supabase.from("arrows").select("*").in("board_id", boardIds),
+	]);
+
+	if (notesResult.error) throw notesResult.error;
+	if (sectionsResult.error) throw sectionsResult.error;
+	if (arrowsResult.error) throw arrowsResult.error;
+
+	const previews = Object.fromEntries(
+		boardIds.map((boardId) => [
+			boardId,
+			{ notes: [], sections: [], arrows: [] } satisfies BoardPreviewData,
+		]),
+	) as BoardPreviewMap;
+
+	(notesResult.data as Note[]).forEach((note) => {
+		previews[note.board_id]?.notes.push({
+			...note,
+			text: note.text ?? "",
+			type: note.type === "question" ? "question" : "idea",
+		});
+	});
+	(sectionsResult.data as Section[]).forEach((section) => {
+		previews[section.board_id]?.sections.push(section);
+	});
+	(arrowsResult.data as Arrow[]).forEach((arrow) => {
+		previews[arrow.board_id]?.arrows.push(arrow);
+	});
+
+	return previews;
+}
+
 export default function Home() {
 	const { user } = useAuthStore();
 	const [boards, setBoards] = useState<Board[]>([]);
+	const [boardPreviews, setBoardPreviews] = useState<BoardPreviewMap>({});
 	const { createBoard } = useBoardStore();
 	const router = useRouter();
 	const [showSignOut, setShowSignOut] = useState(false);
 	const [activeTab, setActiveTab] = useState<"my" | "shared">("my");
+	const [isLoadingBoards, setIsLoadingBoards] = useState(false);
 	const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
 	const [deletingBoardId, setDeletingBoardId] = useState<string | null>(null);
 
 
-	const viewBoards = () => router.push("/boards");
-
 	useEffect(() => {
 		if (!user) return;
+		let cancelled = false;
 
 		const load = async () => {
-			const b = activeTab === "my"
-				? await getBoards(user)
-				: await getSharedBoards();
-			setBoards(b);
+			setIsLoadingBoards(true);
+			setBoards([]);
+			setBoardPreviews({});
+
+			try {
+				const b = activeTab === "my"
+					? await getBoards(user)
+					: await getSharedBoards();
+				if (cancelled) return;
+
+				setBoards(b);
+
+				try {
+					const previews = await getBoardPreviews(b.map((board) => board.id));
+					if (!cancelled) setBoardPreviews(previews);
+				} catch (error) {
+					console.error("Failed to load board previews:", error);
+					if (!cancelled) setBoardPreviews({});
+				}
+
+			} catch (error) {
+				console.error("Failed to load boards:", error);
+				if (!cancelled) {
+					setBoards([]);
+					setBoardPreviews({});
+				}
+			} finally {
+				if (!cancelled) setIsLoadingBoards(false);
+			}
 		};
 
 		load();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [user, activeTab]);
 
-	useEffect(() => {
-		if (!selectedBoardId) return;
-		if (boards.some((board) => board.id === selectedBoardId)) return;
+	const changeTab = (tab: "my" | "shared") => {
+		if (tab === activeTab) return;
+		setActiveTab(tab);
 		setSelectedBoardId(null);
-	}, [boards, selectedBoardId]);
+		setBoards([]);
+		setBoardPreviews({});
+		setIsLoadingBoards(true);
+	};
 
 	useEffect(() => {
 		const handlePointerDown = (e: PointerEvent) => {
@@ -213,7 +287,7 @@ export default function Home() {
 								<button
 									className={`button text-xl ${activeTab === "my" ? "grey-button-active" : "grey-button"
 										}`}
-									onClick={() => setActiveTab("my")}
+									onClick={() => changeTab("my")}
 								>
 									My boards
 								</button>
@@ -223,7 +297,7 @@ export default function Home() {
 										? "grey-button-active"
 										: "grey-button"
 										}`}
-									onClick={() => setActiveTab("shared")}
+									onClick={() => changeTab("shared")}
 								>
 									Shared with me
 								</button>
@@ -236,7 +310,19 @@ export default function Home() {
 							</button>
 						</div>
 						<div className="boards-grid">
-							{boards.map((b) => (
+							{isLoadingBoards && (
+								<p className="text-large text-grey">
+									Loading {activeTab === "my" ? "your boards" : "shared boards"}...
+								</p>
+							)}
+							{!isLoadingBoards && boards.length === 0 && (
+								<p className="text-large text-grey">
+									{activeTab === "my"
+										? "No boards yet."
+										: "No boards have been shared with you yet."}
+								</p>
+							)}
+							{!isLoadingBoards && boards.map((b) => (
 								<div key={b.id}>
 									<button
 										className={`board-card ${selectedBoardId === b.id ? "board-card-selected" : ""
@@ -253,11 +339,7 @@ export default function Home() {
 										}}
 									>
 										<div className="board-thumbnail">
-											<Image
-												src={thumbnail}
-												alt={`${b.name} thumbnail`}
-												className="board-thumbnail-img"
-											/>
+											<BoardPreview data={boardPreviews[b.id]} />
 										</div>
 										<div className="board-info">
 											<p className="text-xl">{b.name}</p>

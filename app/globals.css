@@ -18,6 +18,9 @@
   --pink: #ff93cf;
 
   --purple: #e9d0ff;
+  --red: #ffc7c7;
+  --orange: #ffdabd;
+  --green: #c7f9c7;
 }
 
 .centered-container {
@@ -138,6 +141,8 @@ body {
 
 .note.active {
   border: 2px solid var(--blue);
+  background-color: --yellow;
+
 }
 
 .note-author {

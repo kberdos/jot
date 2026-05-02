@@ -62,12 +62,17 @@ export default function BoardNavbar() {
 		link.remove()
 		URL.revokeObjectURL(url)
 	}
+	const [isRenaming, setIsRenaming] = useState(false)
+	const [newName, setNewName] = useState("")
+
+
 
 	const handleRenameBoard = async () => {
-		const name = prompt("Enter new name")
-		if (name) {
-			await renameBoard(name)
-		}
+		if (!newName.trim()) return
+
+		await renameBoard(newName)
+		setIsRenaming(false)
+		setNewName("")
 	}
 
 	return (
@@ -81,7 +86,10 @@ export default function BoardNavbar() {
 
 				<span
 					className="text-xl cursor-pointer hoverable"
-					onClick={handleRenameBoard}
+					onClick={() => {
+						setIsRenaming(true)
+						setNewName(board?.name || "")
+					}}
 				>
 					{board?.name || "Jot Design Brainstorm"}
 				</span>
@@ -138,6 +146,40 @@ export default function BoardNavbar() {
 					user={user}
 					onClose={() => setIsShareDialogOpen(false)}
 				/>
+			)}
+
+			{isRenaming && (
+				<div
+					className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+					onClick={() => setIsRenaming(false)}
+				>
+					<div
+						className="bg-white rounded-xl shadow-lg p-3 flex items-center gap-2 w-[320px]"
+						onClick={(e) => e.stopPropagation()} 
+					>
+						<input
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							placeholder="Untitled"
+							className="flex-1 px-3 py-2 rounded-md border outline-none text-sm"
+							style={{
+								borderColor: "var(--grey)",
+								outline: "none"
+							  }}
+							autoFocus
+							onKeyDown={(e) => {
+								if (e.key === "Enter") handleRenameBoard()
+							}}
+						/>
+
+						<button
+							onClick={handleRenameBoard}
+							className="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
+						>
+							Done
+						</button>
+					</div>
+				</div>
 			)}
 		</div>
 	)

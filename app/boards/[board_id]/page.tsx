@@ -23,7 +23,7 @@ export default function Home() {
   const { user } = useAuthStore()
   const userId = user?.id
   const { camera } = useCameraStore()
-  const { upsertCursor } = useCollabStore()
+  const { clearCursors, upsertCursor } = useCollabStore()
   const [accessState, setAccessState] = useState<"loading" | "ready" | "denied">("loading")
 
   const cameraRef = useRef(camera)
@@ -46,6 +46,7 @@ export default function Home() {
     let sendCursor: ReturnType<typeof throttle> | null = null
 
     const setupBoard = async () => {
+      clearCursors()
       setAccessState("loading")
 
       try {
@@ -73,6 +74,7 @@ export default function Home() {
           const cursor: Partial<CollabCursor> = {
             user_id: payload.user_id,
             user_email: payload.user_email,
+            user_name: payload.user_name,
             x: payload.x,
             y: payload.y,
           }
@@ -173,6 +175,7 @@ export default function Home() {
           payload: {
             user_id: userRef.current.id,
             user_email: userRef.current.email,
+            user_name: userRef.current.user_metadata.full_name || userRef.current.user_metadata.name || userRef.current.email || "Unknown",
             x: (x - cam.x) / cam.zoom,
             y: (y - cam.y) / cam.zoom,
           }
@@ -193,18 +196,36 @@ export default function Home() {
       dbChannel?.unsubscribe()
       cursorChannelRef.current = null
       sendCursor?.cancel()
+      clearCursors()
     }
   }, [board_id, userId])
 
   if (accessState === "denied") {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white">
-        <div className="max-w-[360px] rounded-[8px] border border-[var(--grey)] bg-white p-6 text-center shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-          <h1 className="mb-3 text-[32px]">Jot</h1>
-          <p className="mb-4 text-xl">You do not have access to this board.</p>
-          <Link className="button blue-button inline-block text-xl" href="/">
-            Back to boards
+      <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-lg">
+          
+          {/* <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-xl">
+            🔒
+          </div> */}
+
+          <p className="mb-2 text-lg text-gray-900">
+            Access restricted
+          </p>
+
+          {/* Description */}
+          <p className="mb-6 text-sm text-gray-500 leading-relaxed">
+            You don’t have permission to view this board.
+          </p>
+
+          {/* Primary button */}
+          <Link
+            href="/"
+            className="button blue-button inline-block text-xl"
+          >
+            Go to my boards
           </Link>
+
         </div>
       </div>
     )
