@@ -89,30 +89,44 @@ export default function Home() {
 	const router = useRouter();
 	const [showSignOut, setShowSignOut] = useState(false);
 	const [activeTab, setActiveTab] = useState<"my" | "shared">("my");
+	const [isLoadingBoards, setIsLoadingBoards] = useState(false);
 	const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
 	const [deletingBoardId, setDeletingBoardId] = useState<string | null>(null);
 
-
-	const viewBoards = () => router.push("/boards");
 
 	useEffect(() => {
 		if (!user) return;
 		let cancelled = false;
 
 		const load = async () => {
-			const b = activeTab === "my"
-				? await getBoards(user)
-				: await getSharedBoards();
-			if (cancelled) return;
-
-			setBoards(b);
+			setIsLoadingBoards(true);
+			setBoards([]);
+			setBoardPreviews({});
 
 			try {
-				const previews = await getBoardPreviews(b.map((board) => board.id));
-				if (!cancelled) setBoardPreviews(previews);
+				const b = activeTab === "my"
+					? await getBoards(user)
+					: await getSharedBoards();
+				if (cancelled) return;
+
+				setBoards(b);
+
+				try {
+					const previews = await getBoardPreviews(b.map((board) => board.id));
+					if (!cancelled) setBoardPreviews(previews);
+				} catch (error) {
+					console.error("Failed to load board previews:", error);
+					if (!cancelled) setBoardPreviews({});
+				}
+
 			} catch (error) {
-				console.error("Failed to load board previews:", error);
-				if (!cancelled) setBoardPreviews({});
+				console.error("Failed to load boards:", error);
+				if (!cancelled) {
+					setBoards([]);
+					setBoardPreviews({});
+				}
+			} finally {
+				if (!cancelled) setIsLoadingBoards(false);
 			}
 		};
 
@@ -123,11 +137,14 @@ export default function Home() {
 		};
 	}, [user, activeTab]);
 
-	useEffect(() => {
-		if (!selectedBoardId) return;
-		if (boards.some((board) => board.id === selectedBoardId)) return;
+	const changeTab = (tab: "my" | "shared") => {
+		if (tab === activeTab) return;
+		setActiveTab(tab);
 		setSelectedBoardId(null);
-	}, [boards, selectedBoardId]);
+		setBoards([]);
+		setBoardPreviews({});
+		setIsLoadingBoards(true);
+	};
 
 	useEffect(() => {
 		const handlePointerDown = (e: PointerEvent) => {
@@ -270,7 +287,7 @@ export default function Home() {
 								<button
 									className={`button text-xl ${activeTab === "my" ? "grey-button-active" : "grey-button"
 										}`}
-									onClick={() => setActiveTab("my")}
+									onClick={() => changeTab("my")}
 								>
 									My boards
 								</button>
@@ -280,7 +297,7 @@ export default function Home() {
 										? "grey-button-active"
 										: "grey-button"
 										}`}
-									onClick={() => setActiveTab("shared")}
+									onClick={() => changeTab("shared")}
 								>
 									Shared with me
 								</button>
