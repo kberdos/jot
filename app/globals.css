@@ -224,7 +224,8 @@ body {
 }
 
 /* hover state */
-.icon:hover {
+.icon:hover,
+.icon.active  {
   background-color: var(--grey);
 }
 
