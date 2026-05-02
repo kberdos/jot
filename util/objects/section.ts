@@ -14,6 +14,7 @@ export interface Section {
 	color: string;
 	board_id: string;
 	author_id: string;
+	last_modified_by: string | null;
 }
 
 export interface GhostSection {
@@ -55,6 +56,7 @@ export async function saveSection(section: Section) {
 			height: section.height,
 			board_id: section.board_id,
 			author_id: section.author_id,
+			last_modified_by: section.last_modified_by,
 		}, { onConflict: 'id' })
 	if (error) throw error
 }
@@ -103,7 +105,10 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 			.eq('board_id', board_id)
 		if (error) throw error
 		set(_ => ({
-			sections: data as Section[],
+			sections: (data as Section[]).map(section => ({
+				...section,
+				last_modified_by: section.last_modified_by ?? null,
+			})),
 		}))
 	},
 

@@ -69,11 +69,11 @@ export default function Home() {
         ({ eventType, new: newRow }) => {
           const note = newRow as Note
           if (eventType === 'INSERT') {
-            if (note.author_id === userRef.current?.id) return
+            if (note.last_modified_by === userRef.current?.id) return
             addNote(note)
           }
           if (eventType === 'UPDATE') {
-            if (note.author_id === userRef.current?.id) return
+            if (note.last_modified_by === userRef.current?.id) return
             updateNote(note.id, note)
           }
           // if (eventType === 'DELETE') removeNote(oldRow.id)
@@ -85,10 +85,13 @@ export default function Home() {
           console.log("ahh")
           const arrow = newRow as Arrow
           if (eventType === 'INSERT') {
-            if (arrow.author_id === userRef.current?.id) return
+            if (arrow.last_modified_by === userRef.current?.id) return
             addArrow(arrow)
           }
-          if (eventType === 'UPDATE') updateArrow(arrow.id, arrow)
+          if (eventType === 'UPDATE') {
+            if (arrow.last_modified_by === userRef.current?.id) return
+            updateArrow(arrow.id, arrow)
+          }
           // if (eventType === 'DELETE') removeNote(oldRow.id)
         }
       )

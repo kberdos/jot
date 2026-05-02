@@ -37,9 +37,12 @@ const NoteObj = ({ note }: { note: Note }) => {
 		textarea.style.height = `calc(100% - ${NOTE_AUTHOR_HEIGHT}px)`
 
 		if (nextHeight !== note.height) {
-			updateNote(note.id, { height: nextHeight })
+			updateNote(note.id, {
+				height: nextHeight,
+				last_modified_by: user!.id,
+			})
 		}
-	}, [note.height, note.id, updateNote])
+	}, [note.height, note.id, updateNote, user])
 
 	useEffect(() => {
 		if (!isEditingText) return
@@ -66,6 +69,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 				id: "",
 				board_id: board!.id,
 				author_id: user!.id,
+				last_modified_by: user!.id,
 				start_note_id: ghostArrow!.start_note_id,
 				start_note_side: ghostArrow!.start_note_side,
 				end_note_id: note.id,
@@ -108,9 +112,18 @@ const NoteObj = ({ note }: { note: Note }) => {
 	const handlePointerUp = (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
 		// XXX: maybe make this a zustand function
-		const section = sections.find(s => noteIsInSection(note, s))
-		updateNote(note.id, { section_id: section?.id ?? null })
-		saveNote({ ...note, section_id: section?.id ?? null })
+		const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id) ?? note
+		const section = sections.find(s => noteIsInSection(currentNote, s))
+		const nextNote = {
+			...currentNote,
+			section_id: section?.id ?? null,
+			last_modified_by: user!.id,
+		}
+		updateNote(note.id, {
+			section_id: nextNote.section_id,
+			last_modified_by: nextNote.last_modified_by,
+		})
+		saveNote(nextNote)
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
@@ -120,6 +133,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 		updateNote(note.id, {
 			x: note.x + e.movementX / camera.zoom,
 			y: note.y + e.movementY / camera.zoom,
+			last_modified_by: user!.id,
 		})
 	}
 
@@ -197,13 +211,16 @@ const NoteObj = ({ note }: { note: Note }) => {
 					}}
 					onChange={(e) => {
 						const text = e.target.value
-						updateNote(note.id, { text })
+						updateNote(note.id, { text, last_modified_by: user!.id })
 						requestAnimationFrame(growNoteForText)
 					}}
 					onBlur={() => {
 						setIsEditingText(false)
 						const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id)
-						saveNote(currentNote ?? { ...note, text: note.text ?? "" })
+						saveNote({
+							...(currentNote ?? { ...note, text: note.text ?? "" }),
+							last_modified_by: user!.id,
+						})
 					}}
 				/>
 				<div

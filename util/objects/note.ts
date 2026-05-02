@@ -18,6 +18,7 @@ export interface Note {
 	board_id: string;
 	author_id: string;
 	author_name: string;
+	last_modified_by: string | null;
 	section_id?: string | null;
 }
 
@@ -61,6 +62,7 @@ export async function saveNote(note: Note) {
 			board_id: note.board_id,
 			author_id: note.author_id,
 			author_name: note.author_name,
+			last_modified_by: note.last_modified_by,
 			section_id: note.section_id,
 		}, { onConflict: 'id' })
 	if (error) throw error
@@ -103,7 +105,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 		if (error) throw error
 		const notes = data as Note[]
 		set(_ => ({
-			notes: notes.map(note => ({ ...note, text: note.text ?? "", author_name: note.author_name ?? "Unknown" })),
+			notes: notes.map(note => ({
+				...note,
+				text: note.text ?? "",
+				author_name: note.author_name ?? "Unknown",
+				last_modified_by: note.last_modified_by ?? null,
+			})),
 		}))
 	},
 	createNote: (x, y, board_id: string, user: User) => {
@@ -118,6 +125,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			board_id: board_id,
 			author_id: user.id,
 			author_name: getUserDisplayName(user),
+			last_modified_by: user.id,
 		}
 		set(state => ({
 			notes: [...state.notes, note],
@@ -127,7 +135,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 	// NOTE: this is used for adding notes pulled from database
 	addNote: (note: Note) => {
 		set(state => ({
-			notes: [...state.notes, { ...note, text: note.text ?? "", author_name: note.author_name ?? "Unknown" }],
+			notes: [...state.notes, {
+				...note,
+				text: note.text ?? "",
+				author_name: note.author_name ?? "Unknown",
+				last_modified_by: note.last_modified_by ?? null,
+			}],
 		}))
 	}
 }))

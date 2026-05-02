@@ -6,6 +6,7 @@ import { toCamera } from "@/util/pointerfunctions"
 import { useEffect, useRef, useState } from "react"
 import { saveNote, useNoteStore } from "@/util/objects/note"
 import { useArrowStore } from "@/util/objects/arrow"
+import { useAuthStore } from "@/util/auth/auth"
 
 const MIN_SECTION_SIZE = 80
 
@@ -26,6 +27,7 @@ const SectionTitle = (props: {
 	onSelect: () => void
 }) => {
 	const updateSection = useSectionStore(state => state.updateSection)
+	const user = useAuthStore(state => state.user)
 	const [isEditing, setIsEditing] = useState(false)
 	const [titleDraft, setTitleDraft] = useState(props.section.title)
 	const [titleEditMinWidth, setTitleEditMinWidth] = useState(props.section.title.length)
@@ -54,10 +56,17 @@ const SectionTitle = (props: {
 	const stopEditing = (shouldCommit: boolean) => {
 		if (shouldCommit) {
 			const title = titleDraft.trim() || "Untitled Section"
-			const nextSection = { ...props.section, title }
+			const nextSection = {
+				...props.section,
+				title,
+				last_modified_by: user!.id,
+			}
 
 			setTitleDraft(title)
-			updateSection(props.section.id, { title })
+			updateSection(props.section.id, {
+				title,
+				last_modified_by: user!.id,
+			})
 			saveSection(nextSection)
 		} else {
 			setTitleDraft(props.section.title)
@@ -143,6 +152,7 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 	const { updateSection, activeSectionId, setActiveSection } = useSectionStore()
 	const { updateNote, setActiveNote } = useNoteStore()
 	const setActiveArrow = useArrowStore(state => state.setActiveArrow)
+	const user = useAuthStore(state => state.user)
 	const isActive = activeSectionId === section.id
 	const sectionRef = useRef(section)
 	const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -157,14 +167,27 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 		const sweptNotes = currentNotes.filter(note =>
 			note.section_id !== currentSection.id && noteIsInSection(note, currentSection)
 		)
-		sweptNotes.forEach(note => updateNote(note.id, { section_id: currentSection.id }))
+		sweptNotes.forEach(note => updateNote(note.id, {
+			section_id: currentSection.id,
+			last_modified_by: user!.id,
+		}))
 
 		await Promise.all([
 			...currentNotes
 				.filter(note => note.section_id === currentSection.id)
-				.map(note => saveNote(note)),
-			...sweptNotes.map(note => saveNote({ ...note, section_id: currentSection.id })),
-			saveSection(currentSection)
+				.map(note => saveNote({
+					...note,
+					last_modified_by: user!.id,
+				})),
+			...sweptNotes.map(note => saveNote({
+				...note,
+				section_id: currentSection.id,
+				last_modified_by: user!.id,
+			})),
+			saveSection({
+				...currentSection,
+				last_modified_by: user!.id,
+			})
 		])
 	}
 
@@ -187,12 +210,21 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 			...currentSection,
 			x: currentSection.x + dx,
 			y: currentSection.y + dy,
+			last_modified_by: user!.id,
 		}
 		sectionRef.current = nextSection
-		updateSection(section.id, { x: nextSection.x, y: nextSection.y })
+		updateSection(section.id, {
+			x: nextSection.x,
+			y: nextSection.y,
+			last_modified_by: user!.id,
+		})
 		useNoteStore.getState().notes
 			.filter(note => note.section_id === section.id)
-			.forEach(note => updateNote(note.id, { x: note.x + dx, y: note.y + dy }))
+			.forEach(note => updateNote(note.id, {
+				x: note.x + dx,
+				y: note.y + dy,
+				last_modified_by: user!.id,
+			}))
 	}
 
 	const handlePointerUp = async (e: React.PointerEvent) => {
@@ -232,9 +264,22 @@ export const SectionComponent = ({ section }: { section: Section }) => {
 			height = Math.max(MIN_SECTION_SIZE, height + dy)
 		}
 
-		const nextSection = { ...currentSection, x, y, width, height }
+		const nextSection = {
+			...currentSection,
+			x,
+			y,
+			width,
+			height,
+			last_modified_by: user!.id,
+		}
 		sectionRef.current = nextSection
-		updateSection(section.id, { x, y, width, height })
+		updateSection(section.id, {
+			x,
+			y,
+			width,
+			height,
+			last_modified_by: user!.id,
+		})
 	}
 
 	const handleResizePointerDown = (e: React.PointerEvent) => {

@@ -253,6 +253,7 @@ const Canvas = () => {
 				title: "Untitled Section",
 				board_id: board!.id,
 				author_id: user!.id,
+				last_modified_by: user!.id,
 				color: DEFAULT_SECTION_COLOR,
 				x,
 				y,
@@ -269,13 +270,20 @@ const Canvas = () => {
 			)
 
 			containedNotes.forEach((note) =>
-				updateNote(note.id, { section_id: section.id }),
+				updateNote(note.id, {
+					section_id: section.id,
+					last_modified_by: user!.id,
+				}),
 			)
 
 			await Promise.all([
 				saveSection(section),
 				...containedNotes.map((note) =>
-					saveNote({ ...note, section_id: section.id }),
+					saveNote({
+						...note,
+						section_id: section.id,
+						last_modified_by: user!.id,
+					}),
 				),
 			])
 		}
@@ -437,13 +445,20 @@ const Canvas = () => {
 						.notes.filter((note) => note.section_id === sectionId)
 
 					sectionNotes.forEach((note) => {
-						updateNoteRef.current(note.id, { section_id: null })
+						updateNoteRef.current(note.id, {
+							section_id: null,
+							last_modified_by: user!.id,
+						})
 					})
 					deleteSectionRef.current(sectionId)
 
 					Promise.all([
 						...sectionNotes.map((note) =>
-							saveNote({ ...note, section_id: null }),
+							saveNote({
+								...note,
+								section_id: null,
+								last_modified_by: user!.id,
+							}),
 						),
 						deleteSavedSection(sectionId),
 					]).catch((error) => {
@@ -456,7 +471,7 @@ const Canvas = () => {
 		window.addEventListener("keydown", handleKeyDown)
 
 		return () => window.removeEventListener("keydown", handleKeyDown)
-	}, [handleEscape])
+	}, [handleEscape, user])
 
 	return (
 		<div
@@ -538,7 +553,10 @@ const Canvas = () => {
 
 						if (section) {
 							n.section_id = section.id
-							updateNote(n.id, { section_id: section.id })
+							updateNote(n.id, {
+								section_id: section.id,
+								last_modified_by: user!.id,
+							})
 						}
 
 						saveNote(n)
