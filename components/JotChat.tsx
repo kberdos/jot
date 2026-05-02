@@ -149,6 +149,7 @@ export default function JotChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { board, setIsChatOpen } = useBoardStore();
   const notes = useNoteStore((state) => state.notes);
   const highlightNotes = useNoteStore((state) => state.highlightNotes);
@@ -180,6 +181,14 @@ export default function JotChat() {
 
   const clampWidth = (value: number) => Math.max(300, Math.min(value, 1200));
 
+  const resizeInput = () => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+  };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
     const trimmedInput = input.trim();
@@ -200,6 +209,7 @@ export default function JotChat() {
     ];
     setMessages(newMessages);
     setInput("");
+    requestAnimationFrame(resizeInput);
     clearNoteContext();
     setLoading(true);
 
@@ -414,12 +424,21 @@ export default function JotChat() {
               ))}
             </div>
           )}
-          <div className="flex items-center">
-            <input
-              className="flex-1 bg-transparent outline-none text-sm"
+          <div className="flex items-end">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className="max-h-[180px] min-h-[32px] flex-1 resize-none overflow-y-auto bg-transparent py-1 text-sm leading-5 outline-none"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onChange={(e) => {
+                setInput(e.target.value);
+                requestAnimationFrame(resizeInput);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || e.shiftKey) return;
+                e.preventDefault();
+                sendMessage();
+              }}
               placeholder="Write a message..."
             />
             <button
