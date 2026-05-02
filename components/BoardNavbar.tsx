@@ -120,7 +120,7 @@ export default function BoardNavbar() {
 							value={newName}
 							onChange={(e) => setNewName(e.target.value)}
 							placeholder="Untitled"
-							className="flex-1 px-3 py-2 rounded-md border outline-none text-sm"
+							className="flex-1 px-3 py-2 rounded-md border outline-none text-xl"
 							style={{
 								borderColor: "var(--grey)",
 								outline: "none"
@@ -133,7 +133,7 @@ export default function BoardNavbar() {
 
 						<button
 							onClick={handleRenameBoard}
-							className="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
+							className="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-xl"
 						>
 							Done
 						</button>
