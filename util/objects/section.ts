@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { supabase } from "@/util/supabase/supabase"
 import { Note, useNoteStore } from "./note"
+import { touchBoard } from "./board"
 
 export const DEFAULT_SECTION_COLOR = "#FFFFFF"
 
@@ -62,15 +63,19 @@ export async function saveSection(section: Section) {
 			last_modified_by: section.last_modified_by,
 		}, { onConflict: 'id' })
 	if (error) throw error
+	await touchBoard(section.board_id, section.last_modified_by)
 }
 
-export async function deleteSavedSection(id: string) {
+export async function deleteSavedSection(id: string, boardId?: string, lastModifiedBy?: string | null) {
 	const { error } = await supabase
 		.from("sections")
 		.delete()
 		.eq("id", id)
 
 	if (error) throw error
+	if (boardId) {
+		await touchBoard(boardId, lastModifiedBy)
+	}
 }
 
 export function noteIsInSection(note: Note, section: Section): boolean {

@@ -434,17 +434,18 @@ const Canvas = () => {
 					deleteArrowsForNoteRef.current(noteId)
 					deleteNoteRef.current(noteId)
 
-					deleteSavedArrowsForNote(noteId).catch((error) => {
+					deleteSavedArrowsForNote(noteId, board!.id, user!.id).catch((error) => {
 						console.error("Failed to delete arrows for note:", error)
 					})
 
-					deleteSavedNote(noteId).catch((error) => {
+					deleteSavedNote(noteId, board!.id, user!.id).catch((error) => {
 						console.error("Failed to delete note:", error)
 					})
 				} else if (arrowId) {
+					const arrow = useArrowStore.getState().arrows.find((a) => a.id === arrowId)
 					deleteArrowRef.current(arrowId)
 
-					deleteSavedArrow(arrowId).catch((error) => {
+					deleteSavedArrow(arrowId, arrow?.board_id ?? board!.id, user!.id).catch((error) => {
 						console.error("Failed to delete arrow:", error)
 					})
 				} else if (sectionId) {
@@ -468,7 +469,7 @@ const Canvas = () => {
 								last_modified_by: user!.id,
 							}),
 						),
-						deleteSavedSection(sectionId),
+						deleteSavedSection(sectionId, board!.id, user!.id),
 					]).catch((error) => {
 						console.error("Failed to delete section:", error)
 					})
