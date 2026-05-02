@@ -99,7 +99,6 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
-
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -528,20 +527,11 @@ const Canvas = () => {
 
 			<div className="toolbar">
 				<button
+					
 					className="icon"
 					onPointerDown={(e) => e.stopPropagation()}
 					onClick={() => {
 						clearSelections()
-
-						const n = createNote(0, 0, board!.id, user!)
-						const section = sections.find((s) => noteIsInSection(n, s))
-
-						if (section) {
-							n.section_id = section.id
-							updateNote(n.id, { section_id: section.id })
-						}
-
-						saveNote(n)
 					}}
 				>
 					<svg
@@ -562,7 +552,19 @@ const Canvas = () => {
 					<button
 						onClick={() => {
 							clearSelections()
-							const n = createNote(0, 0, board!.id, user!)
+							// const n = createNote(0, 0, board!.id, user!)
+							const rect = canvasRef.current!.getBoundingClientRect()
+
+							// center of visible screen
+							const screenX = rect.width / 2
+							const screenY = rect.height / 2
+						  
+							// convert to board coordinates
+							const boardX = (screenX-camera.x) / camera.zoom
+							const boardY = (screenY-camera.y) / camera.zoom
+						  
+							const n = createNote(boardX, boardY, board!.id, user!)
+	
 							saveNote(n)
 						}}
 						onPointerDown={(e) => e.stopPropagation()}
