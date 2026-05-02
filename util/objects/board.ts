@@ -27,7 +27,7 @@ export type BoardViewMode = "BOARD" | "TABLE"
 
 interface BoardStore {
 	board?: Board, // undefined while we're hydrating the page
-	setBoard: (id: string) => void; // gather from database
+	setBoard: (id: string) => Promise<void>; // gather from database
 	renameBoard: (name: string) => Promise<void>;
 	createBoard: (name: string, user: User) => Promise<Board>;
 	isChatOpen: boolean;
