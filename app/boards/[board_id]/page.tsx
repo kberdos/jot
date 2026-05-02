@@ -17,7 +17,7 @@ export default function Home() {
   const params = useParams()
   const board_id = String(params.board_id)
   const { setBoard } = useBoardStore()
-  const { addNote, deleteNote, loadNotes, updateNote } = useNoteStore()
+  const { addNote, applyRemoteNote, deleteNote, loadNotes } = useNoteStore()
   const { loadArrows, addArrow, deleteArrow, deleteArrowsForNote, updateArrow } = useArrowStore()
   const { addSection, deleteSection, loadSections, updateSection } = useSectionStore()
   const { user } = useAuthStore()
@@ -103,7 +103,7 @@ export default function Home() {
               addNote(note)
             }
             if (eventType === 'UPDATE') {
-              updateNote(note.id, note)
+              applyRemoteNote(note)
             }
             // if (eventType === 'DELETE') removeNote(oldRow.id)
           }
