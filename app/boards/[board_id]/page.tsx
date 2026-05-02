@@ -20,6 +20,7 @@ export default function Home() {
   const { loadArrows, addArrow, deleteArrow, deleteArrowsForNote, updateArrow } = useArrowStore()
   const { addSection, deleteSection, loadSections, updateSection } = useSectionStore()
   const { user } = useAuthStore()
+  const userId = user?.id
   const { camera } = useCameraStore()
   const { upsertCursor } = useCollabStore()
 
@@ -29,12 +30,12 @@ export default function Home() {
   const userRef = useRef(user)
   useEffect(() => { userRef.current = user }, [user])
 
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const cursorChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   const sendCursor = useMemo(() => throttle((x: number, y: number) => {
-    if (!userRef.current || !channelRef.current) return
+    if (!userRef.current || !cursorChannelRef.current) return
     const cam = cameraRef.current
-    channelRef.current.send({
+    cursorChannelRef.current.send({
       type: 'broadcast',
       event: 'cursor',
       payload: {
@@ -48,12 +49,16 @@ export default function Home() {
   }, 500), [])
 
   useEffect(() => {
-    const channel = supabase.channel(`board-${board_id}`, {
+    if (!userId) {
+      return
+    }
+
+    const cursorChannel = supabase.channel(`board-${board_id}`, {
       config: { broadcast: { self: false } }
     })
-    channelRef.current = channel
+    cursorChannelRef.current = cursorChannel
 
-    channel
+    cursorChannel
       .on('broadcast', { event: 'cursor' }, ({ payload }) => {
         if (payload.user_id === userRef.current?.id) return
         const cursor: Partial<CollabCursor> = {
@@ -64,6 +69,11 @@ export default function Home() {
         }
         upsertCursor(cursor)
       })
+      .subscribe()
+
+    const dbChannel = supabase.channel(`board-db-${board_id}`)
+
+    dbChannel
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'notes', filter: `board_id=eq.${board_id}` },
         ({ eventType, new: newRow, old: oldRow }) => {
@@ -78,11 +88,12 @@ export default function Home() {
 
           const note = newRow as Note
           if (eventType === 'INSERT') {
-            if (note.last_modified_by === userRef.current?.id) return
+            if (note.last_modified_by === userRef.current?.id) {
+              return
+            }
             addNote(note)
           }
           if (eventType === 'UPDATE') {
-            if (note.last_modified_by === userRef.current?.id) return
             updateNote(note.id, note)
           }
           // if (eventType === 'DELETE') removeNote(oldRow.id)
@@ -101,11 +112,12 @@ export default function Home() {
 
           const arrow = newRow as Arrow
           if (eventType === 'INSERT') {
-            if (arrow.last_modified_by === userRef.current?.id) return
+            if (arrow.last_modified_by === userRef.current?.id) {
+              return
+            }
             addArrow(arrow)
           }
           if (eventType === 'UPDATE') {
-            if (arrow.last_modified_by === userRef.current?.id) return
             updateArrow(arrow.id, arrow)
           }
           // if (eventType === 'DELETE') removeNote(oldRow.id)
@@ -124,11 +136,12 @@ export default function Home() {
 
           const section = newRow as Section
           if (eventType === 'INSERT') {
-            if (section.last_modified_by === userRef.current?.id) return
+            if (section.last_modified_by === userRef.current?.id) {
+              return
+            }
             addSection(section)
           }
           if (eventType === 'UPDATE') {
-            if (section.last_modified_by === userRef.current?.id) return
             updateSection(section.id, section)
           }
         }
@@ -137,8 +150,6 @@ export default function Home() {
         { event: 'UPDATE', schema: 'public', table: 'boards', filter: `id=eq.${board_id}` },
         ({ new: newRow }) => {
           const board = newRow as { id: string; last_modified_by: string | null }
-          if (board.last_modified_by === userRef.current?.id) return
-
           setBoard(board.id)
         }
       )
@@ -152,11 +163,12 @@ export default function Home() {
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
-      channel.unsubscribe()
-      channelRef.current = null
+      cursorChannel.unsubscribe()
+      dbChannel.unsubscribe()
+      cursorChannelRef.current = null
       sendCursor.cancel()
     }
-  }, [])
+  }, [board_id, userId])
 
   return <Overlay />
 }

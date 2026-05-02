@@ -47,7 +47,6 @@ function getUserDisplayName(user: User): string {
 }
 
 export async function saveNote(note: Note) {
-	console.log("saving note to board: ", note.board_id)
 	// XXX: maybe you can split this up into doing less 
 	const { error } = await supabase
 		.from("notes")
@@ -65,7 +64,15 @@ export async function saveNote(note: Note) {
 			last_modified_by: note.last_modified_by,
 			section_id: note.section_id,
 		}, { onConflict: 'id' })
-	if (error) throw error
+	if (error) {
+		console.error("[db:notes] save failed", {
+			id: note.id,
+			board_id: note.board_id,
+			last_modified_by: note.last_modified_by,
+			error,
+		})
+		throw error
+	}
 }
 
 export async function deleteSavedNote(id: string) {

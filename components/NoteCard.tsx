@@ -109,7 +109,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 	}
 
 
-	const handlePointerUp = (e: React.PointerEvent) => {
+	const handlePointerUp = async (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
 		// XXX: maybe make this a zustand function
 		const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id) ?? note
@@ -123,7 +123,14 @@ const NoteObj = ({ note }: { note: Note }) => {
 			section_id: nextNote.section_id,
 			last_modified_by: nextNote.last_modified_by,
 		})
-		saveNote(nextNote)
+		try {
+			await saveNote(nextNote)
+		} catch (error) {
+			console.error("[notes] failed to save note after drag", {
+				noteId: note.id,
+				error,
+			})
+		}
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
