@@ -88,20 +88,28 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 	createBoard: async (name: string, user: User) => {
 		// make the board with supabasse
 		const now = new Date().toISOString()
-		const { data: board, error } = await supabase
+		const board: Board = {
+			id: crypto.randomUUID(),
+			name,
+			author: user.id,
+			author_id: user.id,
+			last_modified_by: user.id,
+			created_at: null,
+			last_updated_at: now,
+		}
+		const { error } = await supabase
 			.from("boards")
 			.insert({
+				id: board.id,
 				name,
 				author: user.id,
 				last_modified_by: user.id,
 				last_updated_at: now,
 			})
-			.select()
-			.single()
 
 		// XXX: go to a 404 instead of throw error
 		if (error) throw error
 
-		return normalizeBoard(board as Board)
+		return normalizeBoard(board)
 	},
 }))
