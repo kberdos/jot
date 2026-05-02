@@ -4,6 +4,7 @@ import { create } from "zustand";
 export interface CollabCursor {
 	user_id: string;
 	user_email: string;
+	user_name: string;
 	// color: string;
 	x: number;
 	y: number;
