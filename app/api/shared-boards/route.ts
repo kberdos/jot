@@ -8,6 +8,7 @@ type SharedBoard = {
 	created_at: string | null
 	last_updated_at: string | null
 	owner_email?: string
+	owner_name?: string
 }
 
 const getSupabaseAdmin = () =>
@@ -20,6 +21,17 @@ const getBearerToken = (req: Request) => {
 	const header = req.headers.get("authorization")
 	if (!header?.startsWith("Bearer ")) return null
 	return header.slice("Bearer ".length)
+}
+
+const getUserDisplayName = (user: { email?: string; user_metadata?: Record<string, unknown> } | null) => {
+	const metadata = user?.user_metadata
+	const fullName = metadata?.full_name
+	const name = metadata?.name
+
+	if (typeof fullName === "string" && fullName.trim()) return fullName
+	if (typeof name === "string" && name.trim()) return name
+
+	return user?.email ?? "Unknown user"
 }
 
 export async function GET(req: Request) {
@@ -71,6 +83,7 @@ export async function GET(req: Request) {
 			created_at: board.created_at ?? null,
 			last_updated_at: board.last_updated_at ?? null,
 			owner_email: data.user?.email ?? "Unknown user",
+			owner_name: getUserDisplayName(data.user),
 		}
 	}))
 

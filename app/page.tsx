@@ -262,7 +262,7 @@ export default function Home() {
 										<div className="board-info">
 											<p className="text-xl">{b.name}</p>
 											{activeTab === "shared" && b.owner_email && (
-												<p className="text-small text-grey">From {b.owner_email}</p>
+												<p className="text-small text-grey">From {b.owner_name ?? b.owner_email}</p>
 											)}
 											<div className="text-small text-grey">
 												{activeTab === "my" && (

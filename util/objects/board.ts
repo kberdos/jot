@@ -9,6 +9,7 @@ export interface Board {
 	author_id: string /* OAuth user ID of board author / owner */
 	author?: string;
 	owner_email?: string;
+	owner_name?: string;
 	last_modified_by: string | null;
 	created_at: string | null;
 	last_updated_at: string | null;
