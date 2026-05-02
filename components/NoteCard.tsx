@@ -6,6 +6,7 @@ import { getNodeOffsets } from "@/util/noteCoordinates"
 import { Arrow, GhostArrow, useArrowStore } from "@/util/objects/arrow"
 import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
+import { useChatContextStore } from "@/util/objects/chat"
 import { DEFAULT_NOTE_HEIGHT, Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
 import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
@@ -17,14 +18,18 @@ const NOTE_AUTHOR_HEIGHT = 22
 const NoteObj = ({ note }: { note: Note }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
 	const activeNoteId = useNoteStore(state => state.activeNoteId)
+	const highlightedNoteIds = useNoteStore(state => state.highlightedNoteIds)
 	const setActiveNote = useNoteStore(state => state.setActiveNote)
 	const camera = useCameraStore(state => state.camera)
 
-	const { board } = useBoardStore()
+	const { board, isChatOpen } = useBoardStore()
 	const { user } = useAuthStore()
+	const { addNoteContext, noteContextIds } = useChatContextStore()
 	const { createArrow, addArrowMode, setAddArrowMode, setGhostArrow, ghostArrow, setActiveArrow } = useArrowStore()
 	const { sections, setActiveSection } = useSectionStore()
 	const isActive = activeNoteId === note.id
+	const isHighlighted = highlightedNoteIds.includes(note.id)
+	const isInChatContext = noteContextIds.includes(note.id)
 	const [isEditingText, setIsEditingText] = useState(false)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -37,9 +42,12 @@ const NoteObj = ({ note }: { note: Note }) => {
 		textarea.style.height = `calc(100% - ${NOTE_AUTHOR_HEIGHT}px)`
 
 		if (nextHeight !== note.height) {
-			updateNote(note.id, { height: nextHeight })
+			updateNote(note.id, {
+				height: nextHeight,
+				last_modified_by: user!.id,
+			})
 		}
-	}, [note.height, note.id, updateNote])
+	}, [note.height, note.id, updateNote, user])
 
 	useEffect(() => {
 		if (!isEditingText) return
@@ -66,6 +74,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 				id: "",
 				board_id: board!.id,
 				author_id: user!.id,
+				last_modified_by: user!.id,
 				start_note_id: ghostArrow!.start_note_id,
 				start_note_side: ghostArrow!.start_note_side,
 				end_note_id: note.id,
@@ -105,12 +114,28 @@ const NoteObj = ({ note }: { note: Note }) => {
 	}
 
 
-	const handlePointerUp = (e: React.PointerEvent) => {
+	const handlePointerUp = async (e: React.PointerEvent) => {
 		e.currentTarget.releasePointerCapture(e.pointerId)
 		// XXX: maybe make this a zustand function
-		const section = sections.find(s => noteIsInSection(note, s))
-		updateNote(note.id, { section_id: section?.id ?? null })
-		saveNote({ ...note, section_id: section?.id ?? null })
+		const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id) ?? note
+		const section = sections.find(s => noteIsInSection(currentNote, s))
+		const nextNote = {
+			...currentNote,
+			section_id: section?.id ?? null,
+			last_modified_by: user!.id,
+		}
+		updateNote(note.id, {
+			section_id: nextNote.section_id,
+			last_modified_by: nextNote.last_modified_by,
+		})
+		try {
+			await saveNote(nextNote)
+		} catch (error) {
+			console.error("[notes] failed to save note after drag", {
+				noteId: note.id,
+				error,
+			})
+		}
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
@@ -120,6 +145,7 @@ const NoteObj = ({ note }: { note: Note }) => {
 		updateNote(note.id, {
 			x: note.x + e.movementX / camera.zoom,
 			y: note.y + e.movementY / camera.zoom,
+			last_modified_by: user!.id,
 		})
 	}
 
@@ -144,9 +170,31 @@ const NoteObj = ({ note }: { note: Note }) => {
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 		>
+			{isChatOpen && isActive && (
+				<button
+					style={{
+						position: "absolute",
+						right: 0,
+						top: -34,
+					}}
+					className="z-[502] rounded-[8px] bg-white px-3 py-2 text-sm shadow-[0_2px_8px_rgba(0,0,0,0.18)] hover:bg-[var(--light-grey)]"
+					onPointerDown={(e) => e.stopPropagation()}
+					onPointerUp={(e) => e.stopPropagation()}
+					onClick={(e) => {
+						e.stopPropagation()
+						addNoteContext(note.id)
+					}}
+				>
+					{isInChatContext ? "Added" : "Add to chat"}
+				</button>
+			)}
 			<div style={{
 				backgroundColor: note.color,
-				border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
+				border: isActive
+					? "3px solid var(--blue)"
+					: isHighlighted
+						? "3px solid #000"
+						: "3px solid transparent",
 				width: `${note.width}px`,
 				height: `${note.height}px`,
 				boxSizing: "border-box",
@@ -197,13 +245,16 @@ const NoteObj = ({ note }: { note: Note }) => {
 					}}
 					onChange={(e) => {
 						const text = e.target.value
-						updateNote(note.id, { text })
+						updateNote(note.id, { text, last_modified_by: user!.id })
 						requestAnimationFrame(growNoteForText)
 					}}
 					onBlur={() => {
 						setIsEditingText(false)
 						const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id)
-						saveNote(currentNote ?? { ...note, text: note.text ?? "" })
+						saveNote({
+							...(currentNote ?? { ...note, text: note.text ?? "" }),
+							last_modified_by: user!.id,
+						})
 					}}
 				/>
 				<div

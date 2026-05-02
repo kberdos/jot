@@ -1,11 +1,13 @@
 import { create } from "zustand"
 import { User } from "@supabase/supabase-js"
 import { supabase } from "@/util/supabase/supabase"
+import { useAuthStore } from "@/util/auth/auth"
 
 export interface Board {
 	id: string; /* UID for this board */
 	name: string; /* name of the board */
 	author_id: string /* OAuth user ID of board author / owner */
+	last_modified_by: string | null;
 }
 
 interface BoardStore {
@@ -43,16 +45,19 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 	renameBoard: async (name: string) => {
 		const { board } = get()
 		if (!board) return
+		const userId = useAuthStore.getState().user?.id ?? board.last_modified_by
 		set(_ => ({
 			board: {
 				...board,
 				name: name,
+				last_modified_by: userId,
 			},
 		}))
 		const { error } = await supabase
 			.from('boards')
 			.update({
 				name: name,
+				last_modified_by: userId,
 			})
 			.eq('id', board.id)
 
@@ -63,7 +68,9 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 		const { data: board, error } = await supabase
 			.from("boards")
 			.insert({
-				name, author: user.id
+				name,
+				author: user.id,
+				last_modified_by: user.id,
 			})
 			.select()
 			.single()

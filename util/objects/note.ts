@@ -18,6 +18,7 @@ export interface Note {
 	board_id: string;
 	author_id: string;
 	author_name: string;
+	last_modified_by: string | null;
 	section_id?: string | null;
 }
 
@@ -26,9 +27,12 @@ export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT"
 interface NoteStore {
 	notes: Note[];
 	activeNoteId: string | null;
+	highlightedNoteIds: string[];
 	// TODO: get note 
 	updateNote: (id: string, changes: Partial<Note>) => void;
 	setActiveNote: (id: string | null) => void;
+	highlightNotes: (ids: string[]) => void;
+	clearHighlightedNotes: () => void;
 	deleteNote: (id: string) => void;
 	loadNotes: (board_id: string) => Promise<void>;
 	createNote: (x: number, y: number, board_id: string, user: User) => Note;
@@ -46,7 +50,6 @@ function getUserDisplayName(user: User): string {
 }
 
 export async function saveNote(note: Note) {
-	console.log("saving note to board: ", note.board_id)
 	// XXX: maybe you can split this up into doing less 
 	const { error } = await supabase
 		.from("notes")
@@ -61,9 +64,18 @@ export async function saveNote(note: Note) {
 			board_id: note.board_id,
 			author_id: note.author_id,
 			author_name: note.author_name,
+			last_modified_by: note.last_modified_by,
 			section_id: note.section_id,
 		}, { onConflict: 'id' })
-	if (error) throw error
+	if (error) {
+		console.error("[db:notes] save failed", {
+			id: note.id,
+			board_id: note.board_id,
+			last_modified_by: note.last_modified_by,
+			error,
+		})
+		throw error
+	}
 }
 
 export async function deleteSavedNote(id: string) {
@@ -78,6 +90,7 @@ export async function deleteSavedNote(id: string) {
 export const useNoteStore = create<NoteStore>((set, get) => ({
 	notes: [],
 	activeNoteId: null,
+	highlightedNoteIds: [],
 	updateNote: (id, changes) => {
 		set(state => ({
 			notes: state.notes.map(n => n.id === id ? { ...n, ...changes } : n)
@@ -88,10 +101,21 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			activeNoteId: id,
 		}))
 	},
+	highlightNotes: (ids) => {
+		set(_ => ({
+			highlightedNoteIds: Array.from(new Set(ids)),
+		}))
+	},
+	clearHighlightedNotes: () => {
+		set(_ => ({
+			highlightedNoteIds: [],
+		}))
+	},
 	deleteNote: (id) => {
 		set(state => ({
 			notes: state.notes.filter(n => n.id !== id),
 			activeNoteId: state.activeNoteId === id ? null : state.activeNoteId,
+			highlightedNoteIds: state.highlightedNoteIds.filter(noteId => noteId !== id),
 		}))
 	},
 	loadNotes: async (board_id: string) => {
@@ -103,7 +127,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 		if (error) throw error
 		const notes = data as Note[]
 		set(_ => ({
-			notes: notes.map(note => ({ ...note, text: note.text ?? "", author_name: note.author_name ?? "Unknown" })),
+			notes: notes.map(note => ({
+				...note,
+				text: note.text ?? "",
+				author_name: note.author_name ?? "Unknown",
+				last_modified_by: note.last_modified_by ?? null,
+			})),
 		}))
 	},
 	createNote: (x, y, board_id: string, user: User) => {
@@ -118,6 +147,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 			board_id: board_id,
 			author_id: user.id,
 			author_name: getUserDisplayName(user),
+			last_modified_by: user.id,
 		}
 		set(state => ({
 			notes: [...state.notes, note],
@@ -127,7 +157,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 	// NOTE: this is used for adding notes pulled from database
 	addNote: (note: Note) => {
 		set(state => ({
-			notes: [...state.notes, { ...note, text: note.text ?? "", author_name: note.author_name ?? "Unknown" }],
+			notes: [...state.notes, {
+				...note,
+				text: note.text ?? "",
+				author_name: note.author_name ?? "Unknown",
+				last_modified_by: note.last_modified_by ?? null,
+			}],
 		}))
 	}
 }))

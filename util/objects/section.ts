@@ -14,6 +14,7 @@ export interface Section {
 	color: string;
 	board_id: string;
 	author_id: string;
+	last_modified_by: string | null;
 }
 
 export interface GhostSection {
@@ -26,8 +27,11 @@ export type AddSectionMode = "NONE" | "ACTIVE" | "ADDING"
 interface SectionStore {
 	sections: Section[];
 	activeSectionId: string | null;
+	highlightedSectionIds: string[];
 	updateSection: (id: string, changes: Partial<Section>) => void;
 	setActiveSection: (id: string | null) => void;
+	highlightSections: (ids: string[]) => void;
+	clearHighlightedSections: () => void;
 	loadSections: (board_id: string) => Promise<void>;
 	createSection: (section: Section) => Section;
 	addSection: (section: Section) => void;
@@ -55,6 +59,7 @@ export async function saveSection(section: Section) {
 			height: section.height,
 			board_id: section.board_id,
 			author_id: section.author_id,
+			last_modified_by: section.last_modified_by,
 		}, { onConflict: 'id' })
 	if (error) throw error
 }
@@ -83,6 +88,7 @@ export function noteIsInSection(note: Note, section: Section): boolean {
 export const useSectionStore = create<SectionStore>((set, get) => ({
 	sections: [],
 	activeSectionId: null,
+	highlightedSectionIds: [],
 
 	updateSection: (id, changes) => {
 		set(state => ({
@@ -96,6 +102,18 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 		}))
 	},
 
+	highlightSections: (ids) => {
+		set(_ => ({
+			highlightedSectionIds: Array.from(new Set(ids)),
+		}))
+	},
+
+	clearHighlightedSections: () => {
+		set(_ => ({
+			highlightedSectionIds: [],
+		}))
+	},
+
 	loadSections: async (board_id: string) => {
 		const { data, error } = await supabase
 			.from("sections")
@@ -103,7 +121,10 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 			.eq('board_id', board_id)
 		if (error) throw error
 		set(_ => ({
-			sections: data as Section[],
+			sections: (data as Section[]).map(section => ({
+				...section,
+				last_modified_by: section.last_modified_by ?? null,
+			})),
 		}))
 	},
 
@@ -125,6 +146,7 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
 		set(state => ({
 			sections: state.sections.filter(s => s.id !== id),
 			activeSectionId: state.activeSectionId === id ? null : state.activeSectionId,
+			highlightedSectionIds: state.highlightedSectionIds.filter(sectionId => sectionId !== id),
 		}))
 	},
 
