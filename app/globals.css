@@ -373,6 +373,23 @@ body {
   gap: 0.75rem;
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.0rem;
+  height: 3.0rem;
+  padding-left:0;
+  padding-right: 0;
+}
+
+
 /* Active tab */
 .nav-active {
   background: var(--light-grey);
