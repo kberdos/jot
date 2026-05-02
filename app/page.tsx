@@ -3,8 +3,8 @@
 import { login, logout, useAuthStore } from "@/util/auth/auth";
 import { useBoardStore } from "@/util/objects/board";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { Board, normalizeBoard } from "@/util/objects/board";
+import { useState, useEffect, useCallback } from "react";
+import { Board } from "@/util/objects/board";
 import { supabase } from "@/util/supabase/supabase";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
