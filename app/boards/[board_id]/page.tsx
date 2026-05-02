@@ -6,7 +6,7 @@ import { useBoardStore } from "@/util/objects/board"
 import { useCameraStore } from "@/util/objects/camera"
 import { CollabCursor, useCollabStore } from "@/util/objects/collab"
 import { Note, useNoteStore } from "@/util/objects/note"
-import { useSectionStore } from "@/util/objects/section"
+import { Section, useSectionStore } from "@/util/objects/section"
 import { supabase } from "@/util/supabase/supabase"
 import { throttle } from "lodash"
 import { useParams } from "next/navigation"
@@ -16,9 +16,9 @@ export default function Home() {
   const params = useParams()
   const board_id = String(params.board_id)
   const { setBoard } = useBoardStore()
-  const { addNote, loadNotes, updateNote } = useNoteStore()
-  const { loadArrows, addArrow, updateArrow } = useArrowStore()
-  const { loadSections } = useSectionStore()
+  const { addNote, deleteNote, loadNotes, updateNote } = useNoteStore()
+  const { loadArrows, addArrow, deleteArrow, deleteArrowsForNote, updateArrow } = useArrowStore()
+  const { addSection, deleteSection, loadSections, updateSection } = useSectionStore()
   const { user } = useAuthStore()
   const { camera } = useCameraStore()
   const { upsertCursor } = useCollabStore()
@@ -66,7 +66,16 @@ export default function Home() {
       })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'notes', filter: `board_id=eq.${board_id}` },
-        ({ eventType, new: newRow }) => {
+        ({ eventType, new: newRow, old: oldRow }) => {
+          if (eventType === 'DELETE') {
+            const noteId = (oldRow as Pick<Note, "id">).id
+            if (!noteId) return
+
+            deleteArrowsForNote(noteId)
+            deleteNote(noteId)
+            return
+          }
+
           const note = newRow as Note
           if (eventType === 'INSERT') {
             if (note.last_modified_by === userRef.current?.id) return
@@ -81,8 +90,15 @@ export default function Home() {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'arrows', filter: `board_id=eq.${board_id}` },
-        ({ eventType, new: newRow }) => {
-          console.log("ahh")
+        ({ eventType, new: newRow, old: oldRow }) => {
+          if (eventType === 'DELETE') {
+            const arrowId = (oldRow as Pick<Arrow, "id">).id
+            if (!arrowId) return
+
+            deleteArrow(arrowId)
+            return
+          }
+
           const arrow = newRow as Arrow
           if (eventType === 'INSERT') {
             if (arrow.last_modified_by === userRef.current?.id) return
@@ -93,6 +109,37 @@ export default function Home() {
             updateArrow(arrow.id, arrow)
           }
           // if (eventType === 'DELETE') removeNote(oldRow.id)
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'sections', filter: `board_id=eq.${board_id}` },
+        ({ eventType, new: newRow, old: oldRow }) => {
+          if (eventType === 'DELETE') {
+            const sectionId = (oldRow as Pick<Section, "id">).id
+            if (!sectionId) return
+
+            deleteSection(sectionId)
+            return
+          }
+
+          const section = newRow as Section
+          if (eventType === 'INSERT') {
+            if (section.last_modified_by === userRef.current?.id) return
+            addSection(section)
+          }
+          if (eventType === 'UPDATE') {
+            if (section.last_modified_by === userRef.current?.id) return
+            updateSection(section.id, section)
+          }
+        }
+      )
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'boards', filter: `id=eq.${board_id}` },
+        ({ new: newRow }) => {
+          const board = newRow as { id: string; last_modified_by: string | null }
+          if (board.last_modified_by === userRef.current?.id) return
+
+          setBoard(board.id)
         }
       )
       .subscribe()
