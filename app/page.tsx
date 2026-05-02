@@ -176,9 +176,13 @@ export default function Home() {
                         <p className="text-small text-grey">From {b.owner_email}</p>
                       )}
                       <p className="text-small text-grey">
+                      {activeTab === "my" && (
+                      <p className="text-small text-grey">
                         {b.last_updated_at
                           ? `Last edited at ${new Date(b.last_updated_at).toLocaleString()}`
                           : "Just created"}
+                      </p>
+                      )}
                       </p>
                     </div>
                   </button>
