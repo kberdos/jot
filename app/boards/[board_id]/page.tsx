@@ -253,7 +253,7 @@ export default function Home() {
 
   if (accessState === "loading") {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white text-xl">
+      <div className="flex h-screen w-screen items-center justify-center bg-white text-xl text-grey">
         Loading board...
       </div>
     )
