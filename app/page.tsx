@@ -4,7 +4,7 @@ import { login, logout, useAuthStore } from "@/util/auth/auth";
 import { useBoardStore } from "@/util/objects/board";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Board } from "@/util/objects/board";
+import { Board, normalizeBoard } from "@/util/objects/board";
 import { supabase } from "@/util/supabase/supabase";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
@@ -17,7 +17,7 @@ async function getBoards(user: User): Promise<Board[]> {
     .eq("author", user.id)
     .order("name", { ascending: true });
   if (error) throw error;
-  return data as Board[];
+  return (data as Board[]).map(normalizeBoard);
 }
 
 export default function Home() {
