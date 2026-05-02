@@ -188,18 +188,20 @@ const NoteObj = ({ note }: { note: Note }) => {
 					{isInChatContext ? "Added" : "Add to chat"}
 				</button>
 			)}
-			<div style={{
-				backgroundColor: note.color,
-				border: isActive
-					? "3px solid var(--blue)"
-					: isHighlighted
-						? "3px solid #000"
-						: "3px solid transparent",
-				width: `${note.width}px`,
-				height: `${note.height}px`,
-				boxSizing: "border-box",
-				position: "relative",
-			}}
+			<div 
+				className={`note ${note.type}`}
+				style={{
+					// backgroundColor: note.color,
+					border: isActive
+						? "3px solid var(--blue)"
+						: isHighlighted
+							? "3px solid #000"
+							: "3px solid transparent",
+					width: `${note.width}px`,
+					height: `${note.height}px`,
+					boxSizing: "border-box",
+					position: "relative",
+				}}
 			>
 				<textarea
 					ref={textareaRef}

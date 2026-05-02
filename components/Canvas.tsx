@@ -628,7 +628,9 @@ const Canvas = () => {
 					</button>
 
 					<div className="note-hover-menu">
+						
 						<button className="pill idea"
+								onPointerDown={(e) => e.stopPropagation()}
 								onClick={(e) => {
 									e.stopPropagation()
 									console.log("hiiii")
@@ -647,6 +649,7 @@ const Canvas = () => {
 								}}
 								>Idea</button>
 						<button className="pill question"
+							onPointerDown={(e) => e.stopPropagation()}
 							onClick={(e) => {
 								e.stopPropagation()
 								console.log("hello")

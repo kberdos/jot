@@ -396,7 +396,7 @@ body {
 /* hidden by default */
 .note-hover-menu {
   position: absolute;
-  left: 20px;
+  left: 30px;
   top: 50%;
   transform: translateY(-50%);
 
@@ -407,6 +407,7 @@ body {
   opacity: 0;
   pointer-events: auto;
   transition: opacity 0.15s ease;
+  z-index: 1000;
 }
 
 /* show on hover */
