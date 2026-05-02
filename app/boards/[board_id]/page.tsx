@@ -73,6 +73,7 @@ export default function Home() {
           const cursor: Partial<CollabCursor> = {
             user_id: payload.user_id,
             user_email: payload.user_email,
+            user_name: payload.user_name,
             x: payload.x,
             y: payload.y,
           }
@@ -173,6 +174,7 @@ export default function Home() {
           payload: {
             user_id: userRef.current.id,
             user_email: userRef.current.email,
+            user_name: userRef.current.user_metadata.full_name || userRef.current.user_metadata.name || userRef.current.email || "Unknown",
             x: (x - cam.x) / cam.zoom,
             y: (y - cam.y) / cam.zoom,
           }

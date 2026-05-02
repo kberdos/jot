@@ -134,13 +134,13 @@ export default function BoardShareDialog(props: {
 				className="w-[420px] rounded-[8px] border border-[var(--grey)] bg-white p-4 shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
 				onPointerDown={(e) => e.stopPropagation()}
 			>
-				<div className="mb-3 flex items-start justify-between gap-4">
-					<h3 className="text-large font-medium">
+				<div className="mb-1 flex items-center justify-between gap-4">
+					<h3 className="text-xl font-medium ">
 						Share “{props.board.name}”
 					</h3>
 					<button
 						aria-label="Close sharing dialog"
-						className="rounded-[6px] px-2 py-1 text-xl"
+						className="rounded-[6px] px-2 py-1 text-xxl"
 						onClick={props.onClose}
 					>
 						×
