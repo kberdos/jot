@@ -53,8 +53,7 @@ export default function Home() {
         await loadSections(board_id)
         await loadNotes(board_id)
         await loadArrows(board_id)
-      } catch (error) {
-        console.error("[board] failed to load board", error)
+      } catch {
         if (isCurrent) setAccessState("denied")
         return
       }
