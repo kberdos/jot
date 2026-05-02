@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { supabase } from "@/util/supabase/supabase";
 import { User } from "@supabase/supabase-js";
+import { touchBoard } from "./board";
 
 export const DEFAULT_NOTE_WIDTH = 200;
 // XXX: heights change dynamically based on text - can just use css styling
@@ -31,10 +32,13 @@ export type NoteSide = "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
 interface NoteStore {
   notes: Note[];
   activeNoteId: string | null;
+  editingNoteId: string | null;
   highlightedNoteIds: string[];
   // TODO: get note
   updateNote: (id: string, changes: Partial<Note>) => void;
+  applyRemoteNote: (note: Note) => void;
   setActiveNote: (id: string | null) => void;
+  setEditingNote: (id: string | null) => void;
   highlightNotes: (ids: string[]) => void;
   clearHighlightedNotes: () => void;
   deleteNote: (id: string) => void;
@@ -102,26 +106,55 @@ export async function saveNote(note: Note) {
     });
     throw error;
   }
+  await touchBoard(note.board_id, note.last_modified_by);
 }
 
-export async function deleteSavedNote(id: string) {
+export async function deleteSavedNote(id: string, boardId?: string, lastModifiedBy?: string | null) {
   const { error } = await supabase.from("notes").delete().eq("id", id);
 
   if (error) throw error;
+  if (boardId) {
+    await touchBoard(boardId, lastModifiedBy);
+  }
 }
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
   notes: [],
   activeNoteId: null,
+  editingNoteId: null,
   highlightedNoteIds: [],
   updateNote: (id, changes) => {
     set((state) => ({
       notes: state.notes.map((n) => (n.id === id ? { ...n, ...changes } : n)),
     }));
   },
+  applyRemoteNote: (note) => {
+    set((state) => ({
+      notes: state.notes.map((n) => {
+        if (n.id !== note.id) return n;
+        const nextNote = normalizeNote(note);
+
+        if (state.editingNoteId === note.id) {
+          return {
+            ...nextNote,
+            text: n.text,
+            height: n.height,
+            last_modified_by: n.last_modified_by,
+          };
+        }
+
+        return nextNote;
+      }),
+    }));
+  },
   setActiveNote: (id) => {
     set((_) => ({
       activeNoteId: id,
+    }));
+  },
+  setEditingNote: (id) => {
+    set((_) => ({
+      editingNoteId: id,
     }));
   },
   highlightNotes: (ids) => {

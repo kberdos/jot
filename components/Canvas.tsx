@@ -26,9 +26,8 @@ import {
 	useSectionStore,
 } from "@/util/objects/section";
 import { GhostSectionComponent, SectionComponent } from "./Section";
-import BoardShareDialog from "./BoardShareDialog";
 
-const ZOOM_MIN = 0.5;
+const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 3;
 
 type TouchPoint = {
@@ -98,7 +97,6 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
-	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -436,17 +434,18 @@ const Canvas = () => {
 					deleteArrowsForNoteRef.current(noteId)
 					deleteNoteRef.current(noteId)
 
-					deleteSavedArrowsForNote(noteId).catch((error) => {
+					deleteSavedArrowsForNote(noteId, board!.id, user!.id).catch((error) => {
 						console.error("Failed to delete arrows for note:", error)
 					})
 
-					deleteSavedNote(noteId).catch((error) => {
+					deleteSavedNote(noteId, board!.id, user!.id).catch((error) => {
 						console.error("Failed to delete note:", error)
 					})
 				} else if (arrowId) {
+					const arrow = useArrowStore.getState().arrows.find((a) => a.id === arrowId)
 					deleteArrowRef.current(arrowId)
 
-					deleteSavedArrow(arrowId).catch((error) => {
+					deleteSavedArrow(arrowId, arrow?.board_id ?? board!.id, user!.id).catch((error) => {
 						console.error("Failed to delete arrow:", error)
 					})
 				} else if (sectionId) {
@@ -470,7 +469,7 @@ const Canvas = () => {
 								last_modified_by: user!.id,
 							}),
 						),
-						deleteSavedSection(sectionId),
+						deleteSavedSection(sectionId, board!.id, user!.id),
 					]).catch((error) => {
 						console.error("Failed to delete section:", error)
 					})
@@ -710,14 +709,6 @@ const Canvas = () => {
 					</svg>
 				</button>
 			</div>
-
-			{isShareDialogOpen && board && user && (
-				<BoardShareDialog
-					board={board}
-					user={user}
-					onClose={() => setIsShareDialogOpen(false)}
-				/>
-			)}
 
 		</div>
 	)

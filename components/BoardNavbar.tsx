@@ -1,8 +1,11 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 
 import { type BoardViewMode, useBoardStore } from "@/util/objects/board"
+import { useAuthStore } from "@/util/auth/auth"
+import BoardShareDialog from "./BoardShareDialog"
 
 const viewButtons: { mode: BoardViewMode; label: string }[] = [
 	{ mode: "BOARD", label: "Board" },
@@ -17,6 +20,8 @@ export default function BoardNavbar() {
 		viewMode,
 		setViewMode,
 	} = useBoardStore()
+	const { user } = useAuthStore()
+	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 
 	const handleRenameBoard = async () => {
 		const name = prompt("Enter new name")
@@ -56,9 +61,20 @@ export default function BoardNavbar() {
 			</div>
 
 			{!isChatOpen && (
-				<button className="text-xl button blue-button">
+				<button
+					className="text-xl button blue-button"
+					onClick={() => setIsShareDialogOpen(true)}
+				>
 					Share
 				</button>
+			)}
+
+			{isShareDialogOpen && board && user && (
+				<BoardShareDialog
+					board={board}
+					user={user}
+					onClose={() => setIsShareDialogOpen(false)}
+				/>
 			)}
 		</div>
 	)

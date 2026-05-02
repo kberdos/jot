@@ -9,6 +9,7 @@ export interface Board {
 	author_id: string /* OAuth user ID of board author / owner */
 	author?: string;
 	owner_email?: string;
+	owner_name?: string;
 	last_modified_by: string | null;
 	created_at: string | null;
 	last_updated_at: string | null;
@@ -88,20 +89,52 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 	createBoard: async (name: string, user: User) => {
 		// make the board with supabasse
 		const now = new Date().toISOString()
-		const { data: board, error } = await supabase
+		const board: Board = {
+			id: crypto.randomUUID(),
+			name,
+			author: user.id,
+			author_id: user.id,
+			last_modified_by: user.id,
+			created_at: null,
+			last_updated_at: now,
+		}
+		const { error } = await supabase
 			.from("boards")
 			.insert({
+				id: board.id,
 				name,
 				author: user.id,
 				last_modified_by: user.id,
 				last_updated_at: now,
 			})
-			.select()
-			.single()
 
 		// XXX: go to a 404 instead of throw error
 		if (error) throw error
 
-		return normalizeBoard(board as Board)
+		return normalizeBoard(board)
 	},
 }))
+
+export async function touchBoard(boardId: string, lastModifiedBy?: string | null) {
+	const lastUpdatedAt = new Date().toISOString()
+	const { error } = await supabase
+		.from("boards")
+		.update({
+			last_updated_at: lastUpdatedAt,
+			last_modified_by: lastModifiedBy ?? null,
+		})
+		.eq("id", boardId)
+
+	if (error) throw error
+
+	const currentBoard = useBoardStore.getState().board
+	if (currentBoard?.id === boardId) {
+		useBoardStore.setState({
+			board: {
+				...currentBoard,
+				last_updated_at: lastUpdatedAt,
+				last_modified_by: lastModifiedBy ?? currentBoard.last_modified_by,
+			},
+		})
+	}
+}

@@ -10,16 +10,22 @@ import { useChatContextStore } from "@/util/objects/chat"
 import { DEFAULT_NOTE_HEIGHT, Note, NoteSide, saveNote, useNoteStore } from "@/util/objects/note"
 import { noteIsInSection, useSectionStore } from "@/util/objects/section"
 import { handlePointerDown } from "@/util/pointerfunctions"
+import { Roboto } from "next/font/google";
 
 const NOTE_TEXT_PADDING = 12
 const NOTE_AUTHOR_HEIGHT = 22
 
+const roboto = Roboto({
+  weight: "400",
+  subsets: ["latin"]
+})
 
 const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "cursor" | "note" | "arrow" | "section") => void }) => {
 	const updateNote = useNoteStore(state => state.updateNote)
 	const activeNoteId = useNoteStore(state => state.activeNoteId)
 	const highlightedNoteIds = useNoteStore(state => state.highlightedNoteIds)
 	const setActiveNote = useNoteStore(state => state.setActiveNote)
+	const setEditingNote = useNoteStore(state => state.setEditingNote)
 	const camera = useCameraStore(state => state.camera)
 
 	const { board, isChatOpen } = useBoardStore()
@@ -31,6 +37,7 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 	const isHighlighted = highlightedNoteIds.includes(note.id)
 	const isInChatContext = noteContextIds.includes(note.id)
 	const [isEditingText, setIsEditingText] = useState(false)
+	const [textDraft, setTextDraft] = useState(note.text)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
 	const growNoteForText = useCallback(() => {
@@ -49,17 +56,23 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 		}
 	}, [note.height, note.id, updateNote, user])
 
+	const startEditingText = () => {
+		setTextDraft(note.text)
+		setIsEditingText(true)
+		setEditingNote(note.id)
+	}
+
 	useEffect(() => {
 		if (!isEditingText) return
 
 		textareaRef.current?.focus()
-		textareaRef.current?.setSelectionRange(note.text.length, note.text.length)
+		textareaRef.current?.setSelectionRange(textDraft.length, textDraft.length)
 		growNoteForText()
-	}, [growNoteForText, isEditingText, note.text.length])
+	}, [growNoteForText, isEditingText, textDraft.length])
 
 	useEffect(() => {
 		growNoteForText()
-	}, [growNoteForText, note.text, note.width])
+	}, [growNoteForText, note.text, note.width, textDraft])
 
 	const handleGhostArrow = (noteSide: NoteSide) => {
 		if (addArrowMode === "ACTIVE") {
@@ -167,7 +180,7 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 			}}
 			onDoubleClick={(e) => {
 				e.stopPropagation()
-				setIsEditingText(true)
+				startEditingText()
 			}}
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
@@ -207,7 +220,7 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 			>
 				<textarea
 					ref={textareaRef}
-					value={note.text}
+					value={isEditingText ? textDraft : note.text}
 					readOnly={!isEditingText}
 					tabIndex={isEditingText ? 0 : -1}
 					spellCheck={false}
@@ -245,18 +258,21 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 					}}
 					onDoubleClick={(e) => {
 						e.stopPropagation()
-						setIsEditingText(true)
+						startEditingText()
 					}}
 					onChange={(e) => {
 						const text = e.target.value
+						setTextDraft(text)
 						updateNote(note.id, { text, last_modified_by: user!.id })
 						requestAnimationFrame(growNoteForText)
 					}}
 					onBlur={() => {
 						setIsEditingText(false)
+						setEditingNote(null)
 						const currentNote = useNoteStore.getState().notes.find(n => n.id === note.id)
 						saveNote({
-							...(currentNote ?? { ...note, text: note.text ?? "" }),
+							...(currentNote ?? { ...note, text: textDraft }),
+							text: textDraft,
 							last_modified_by: user!.id,
 						})
 					}}

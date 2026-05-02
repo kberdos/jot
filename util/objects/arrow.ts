@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { NoteSide } from "./note";
 import { supabase } from "../supabase/supabase";
+import { touchBoard } from "./board";
 
 // drawn arrow
 export interface Arrow {
@@ -55,24 +56,31 @@ export async function saveArrow(arrow: Arrow) {
 			end_note_side: arrow.end_note_side,
 		}, { onConflict: 'id' })
 	if (error) throw error
+	await touchBoard(arrow.board_id, arrow.last_modified_by)
 }
 
-export async function deleteSavedArrow(id: string) {
+export async function deleteSavedArrow(id: string, boardId?: string, lastModifiedBy?: string | null) {
 	const { error } = await supabase
 		.from("arrows")
 		.delete()
 		.eq("id", id)
 
 	if (error) throw error
+	if (boardId) {
+		await touchBoard(boardId, lastModifiedBy)
+	}
 }
 
-export async function deleteSavedArrowsForNote(noteId: string) {
+export async function deleteSavedArrowsForNote(noteId: string, boardId?: string, lastModifiedBy?: string | null) {
 	const { error } = await supabase
 		.from("arrows")
 		.delete()
 		.or(`start_note_id.eq.${noteId},end_note_id.eq.${noteId}`)
 
 	if (error) throw error
+	if (boardId) {
+		await touchBoard(boardId, lastModifiedBy)
+	}
 }
 
 export const useArrowStore = create<ArrowStore>((set, get) => ({

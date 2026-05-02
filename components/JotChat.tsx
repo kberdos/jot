@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 import { useChatContextStore } from "@/util/objects/chat";
-import { useNoteStore } from "@/util/objects/note";
+import { NoteType, useNoteStore } from "@/util/objects/note";
 import { useSectionStore } from "@/util/objects/section";
 
 interface Message {
@@ -13,30 +13,98 @@ interface Message {
     text: string;
     author_name: string;
     color: string;
+    type: NoteType;
   }[];
 }
 
 const renderInlineMarkdown = (text: string) => {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
 
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return <strong key={index}>{part.slice(2, -2)}</strong>;
     }
 
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={index}
+          className="rounded-[4px] bg-white px-1 py-[1px] font-mono text-[0.92em]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
     return part;
   });
 };
 
+const renderHeader = (level: number, content: string, key: number) => {
+  const children = renderInlineMarkdown(content);
+
+  if (level === 1) {
+    return <h1 key={key} className="text-xl font-semibold">{children}</h1>;
+  }
+
+  if (level === 2) {
+    return <h2 key={key} className="text-large font-semibold">{children}</h2>;
+  }
+
+  if (level === 3) {
+    return <h3 key={key} className="text-sm font-semibold">{children}</h3>;
+  }
+
+  if (level === 4) {
+    return <h4 key={key} className="text-sm font-semibold">{children}</h4>;
+  }
+
+  if (level === 5) {
+    return <h5 key={key} className="text-sm font-semibold">{children}</h5>;
+  }
+
+  return <h6 key={key} className="text-sm font-semibold">{children}</h6>;
+};
+
 const ChatText = ({ text }: { text: string }) => {
-  const lines = text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = text.split(/\n/);
   const blocks: React.ReactNode[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const codeFenceMatch = line.match(/^```.*$/);
+    if (codeFenceMatch) {
+      const codeLines: string[] = [];
+      i++;
+
+      while (i < lines.length && !lines[i].trim().startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+
+      blocks.push(
+        <pre
+          key={blocks.length}
+          className="overflow-x-auto rounded-[6px] bg-white p-3 font-mono text-[11px] leading-relaxed"
+        >
+          <code>{codeLines.join("\n")}</code>
+        </pre>,
+      );
+      continue;
+    }
+
+    const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+
+      blocks.push(renderHeader(level, content, blocks.length));
+      continue;
+    }
+
     const bulletMatch = line.match(/^[-*]\s+(.+)$/);
     const numberedMatch = line.match(/^\d+\.\s+(.+)$/);
 
@@ -81,6 +149,7 @@ export default function JotChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { board, setIsChatOpen } = useBoardStore();
   const notes = useNoteStore((state) => state.notes);
   const highlightNotes = useNoteStore((state) => state.highlightNotes);
@@ -112,6 +181,14 @@ export default function JotChat() {
 
   const clampWidth = (value: number) => Math.max(300, Math.min(value, 1200));
 
+  const resizeInput = () => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+  };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
     const trimmedInput = input.trim();
@@ -120,6 +197,7 @@ export default function JotChat() {
       text: note.text,
       author_name: note.author_name,
       color: note.color,
+      type: note.type,
     }));
     const newMessages: Message[] = [
       ...messages,
@@ -131,6 +209,7 @@ export default function JotChat() {
     ];
     setMessages(newMessages);
     setInput("");
+    requestAnimationFrame(resizeInput);
     clearNoteContext();
     setLoading(true);
 
@@ -290,8 +369,8 @@ export default function JotChat() {
                   {m.contextNotes.map((note) => (
                     <div
                       key={note.id}
-                      style={{ backgroundColor: note.color }}
-                      className="relative h-[82px] w-[82px] shrink-0 border border-[rgba(0,0,0,0.14)] p-2 text-left"
+                      style={{ width: 82, height: 82, minHeight: 0 }}
+                      className={`note ${note.type} relative shrink-0 rounded-none border border-[rgba(0,0,0,0.14)] p-2 text-left`}
                     >
                       <div className="h-[54px] overflow-hidden text-[9px] leading-tight text-black">
                         {note.text || "Untitled note"}
@@ -325,8 +404,8 @@ export default function JotChat() {
               {contextNotes.map((note) => (
                 <div
                   key={note.id}
-                  style={{ backgroundColor: note.color }}
-                  className="relative h-[140px] w-[140px] shrink-0 border border-[rgba(0,0,0,0.12)] p-3 text-left"
+                  style={{ width: 140, height: 140, minHeight: 0 }}
+                  className={`note ${note.type} relative shrink-0 rounded-none border border-[rgba(0,0,0,0.12)] p-3 text-left`}
                 >
                   <button
                     aria-label="Remove note from chat context"
@@ -345,12 +424,21 @@ export default function JotChat() {
               ))}
             </div>
           )}
-          <div className="flex items-center">
-            <input
-              className="flex-1 bg-transparent outline-none text-sm"
+          <div className="flex items-end">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className="max-h-[180px] min-h-[32px] flex-1 resize-none overflow-y-auto bg-transparent py-1 text-sm leading-5 outline-none"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onChange={(e) => {
+                setInput(e.target.value);
+                requestAnimationFrame(resizeInput);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || e.shiftKey) return;
+                e.preventDefault();
+                sendMessage();
+              }}
               placeholder="Write a message..."
             />
             <button

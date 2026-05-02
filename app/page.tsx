@@ -7,8 +7,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Board } from "@/util/objects/board";
 import { supabase } from "@/util/supabase/supabase";
 import { User } from "@supabase/supabase-js";
-import Image from "next/image";
-import thumbnail from "../assets/dummy-thumbnail.png";
+import BoardPreview, { BoardPreviewData } from "@/components/BoardPreview";
+import { Note } from "@/util/objects/note";
+import { Section } from "@/util/objects/section";
+import { Arrow } from "@/util/objects/arrow";
+
+type BoardPreviewMap = Record<string, BoardPreviewData>;
 
 async function getBoards(user: User): Promise<Board[]> {
 	const { data, error } = await supabase
@@ -40,9 +44,47 @@ async function getSharedBoards(): Promise<Board[]> {
 	return (data.boards as Board[]).map(normalizeBoard);
 }
 
+async function getBoardPreviews(boardIds: string[]): Promise<BoardPreviewMap> {
+	if (boardIds.length === 0) return {};
+
+	const [notesResult, sectionsResult, arrowsResult] = await Promise.all([
+		supabase.from("notes").select("*").in("board_id", boardIds),
+		supabase.from("sections").select("*").in("board_id", boardIds),
+		supabase.from("arrows").select("*").in("board_id", boardIds),
+	]);
+
+	if (notesResult.error) throw notesResult.error;
+	if (sectionsResult.error) throw sectionsResult.error;
+	if (arrowsResult.error) throw arrowsResult.error;
+
+	const previews = Object.fromEntries(
+		boardIds.map((boardId) => [
+			boardId,
+			{ notes: [], sections: [], arrows: [] } satisfies BoardPreviewData,
+		]),
+	) as BoardPreviewMap;
+
+	(notesResult.data as Note[]).forEach((note) => {
+		previews[note.board_id]?.notes.push({
+			...note,
+			text: note.text ?? "",
+			type: note.type === "question" ? "question" : "idea",
+		});
+	});
+	(sectionsResult.data as Section[]).forEach((section) => {
+		previews[section.board_id]?.sections.push(section);
+	});
+	(arrowsResult.data as Arrow[]).forEach((arrow) => {
+		previews[arrow.board_id]?.arrows.push(arrow);
+	});
+
+	return previews;
+}
+
 export default function Home() {
 	const { user } = useAuthStore();
 	const [boards, setBoards] = useState<Board[]>([]);
+	const [boardPreviews, setBoardPreviews] = useState<BoardPreviewMap>({});
 	const { createBoard } = useBoardStore();
 	const router = useRouter();
 	const [showSignOut, setShowSignOut] = useState(false);
@@ -55,15 +97,30 @@ export default function Home() {
 
 	useEffect(() => {
 		if (!user) return;
+		let cancelled = false;
 
 		const load = async () => {
 			const b = activeTab === "my"
 				? await getBoards(user)
 				: await getSharedBoards();
+			if (cancelled) return;
+
 			setBoards(b);
+
+			try {
+				const previews = await getBoardPreviews(b.map((board) => board.id));
+				if (!cancelled) setBoardPreviews(previews);
+			} catch (error) {
+				console.error("Failed to load board previews:", error);
+				if (!cancelled) setBoardPreviews({});
+			}
 		};
 
 		load();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [user, activeTab]);
 
 	useEffect(() => {
@@ -253,20 +310,16 @@ export default function Home() {
 										}}
 									>
 										<div className="board-thumbnail">
-											<Image
-												src={thumbnail}
-												alt={`${b.name} thumbnail`}
-												className="board-thumbnail-img"
-											/>
+											<BoardPreview data={boardPreviews[b.id]} />
 										</div>
 										<div className="board-info">
 											<p className="text-xl">{b.name}</p>
 											{activeTab === "shared" && b.owner_email && (
-												<p className="text-small text-grey">From {b.owner_email}</p>
+												<p className="text-small text-grey subtext">From {b.owner_name ?? b.owner_email}</p>
 											)}
 											<div className="text-small text-grey">
 												{activeTab === "my" && (
-													<p className="text-small text-grey">
+													<p className="text-small text-grey subtext">
 														{b.last_updated_at
 															? `Last edited at ${new Date(b.last_updated_at).toLocaleString()}`
 															: "Just created"}
