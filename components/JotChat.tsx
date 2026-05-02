@@ -76,7 +76,7 @@ export default function JotChat() {
 
     // 	>
     <div
-      className="fixed top-0 right-0 h-screen bg-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] flex flex-col border-l border-[var(--grey)] z-50"
+      className="fixed top-0 right-0 h-screen bg-white shadow-[0_5px_10px_rgba(0,0,0,0.25)] flex flex-col border-l border-[var(--grey)] z-50"
       style={{ width }}
     >
       <div
