@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 import { useChatContextStore } from "@/util/objects/chat";
-import { useNoteStore } from "@/util/objects/note";
+import { NoteType, useNoteStore } from "@/util/objects/note";
 import { useSectionStore } from "@/util/objects/section";
 
 interface Message {
@@ -13,6 +13,7 @@ interface Message {
     text: string;
     author_name: string;
     color: string;
+    type: NoteType;
   }[];
 }
 
@@ -187,6 +188,7 @@ export default function JotChat() {
       text: note.text,
       author_name: note.author_name,
       color: note.color,
+      type: note.type,
     }));
     const newMessages: Message[] = [
       ...messages,
@@ -357,8 +359,8 @@ export default function JotChat() {
                   {m.contextNotes.map((note) => (
                     <div
                       key={note.id}
-                      style={{ backgroundColor: note.color }}
-                      className="relative h-[82px] w-[82px] shrink-0 border border-[rgba(0,0,0,0.14)] p-2 text-left"
+                      style={{ width: 82, height: 82, minHeight: 0 }}
+                      className={`note ${note.type} relative shrink-0 rounded-none border border-[rgba(0,0,0,0.14)] p-2 text-left`}
                     >
                       <div className="h-[54px] overflow-hidden text-[9px] leading-tight text-black">
                         {note.text || "Untitled note"}
@@ -392,8 +394,8 @@ export default function JotChat() {
               {contextNotes.map((note) => (
                 <div
                   key={note.id}
-                  style={{ backgroundColor: note.color }}
-                  className="relative h-[140px] w-[140px] shrink-0 border border-[rgba(0,0,0,0.12)] p-3 text-left"
+                  style={{ width: 140, height: 140, minHeight: 0 }}
+                  className={`note ${note.type} relative shrink-0 rounded-none border border-[rgba(0,0,0,0.12)] p-3 text-left`}
                 >
                   <button
                     aria-label="Remove note from chat context"
