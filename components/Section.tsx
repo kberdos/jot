@@ -191,9 +191,20 @@ export const SectionComponent = ({ section }: { section: Section }) => {
         note.section_id !== currentSection.id &&
         noteIsInSection(note, currentSection),
     );
+    const releasedNotes = currentNotes.filter(
+      (note) =>
+        note.section_id === currentSection.id &&
+        !noteIsInSection(note, currentSection),
+    );
     sweptNotes.forEach((note) =>
       updateNote(note.id, {
         section_id: currentSection.id,
+        last_modified_by: user!.id,
+      }),
+    );
+    releasedNotes.forEach((note) =>
+      updateNote(note.id, {
+        section_id: null,
         last_modified_by: user!.id,
       }),
     );
@@ -204,6 +215,9 @@ export const SectionComponent = ({ section }: { section: Section }) => {
         .map((note) =>
           saveNote({
             ...note,
+            section_id: releasedNotes.some((releasedNote) => releasedNote.id === note.id)
+              ? null
+              : note.section_id,
             last_modified_by: user!.id,
           }),
         ),
