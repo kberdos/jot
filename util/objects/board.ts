@@ -14,6 +14,7 @@ export interface Board {
 	last_updated_at: string | null;
 }
 
+
 export function normalizeBoard(board: Board): Board {
 	return {
 		...board,
@@ -22,6 +23,8 @@ export function normalizeBoard(board: Board): Board {
 	}
 }
 
+export type BoardViewMode = "BOARD" | "TABLE"
+
 interface BoardStore {
 	board?: Board, // undefined while we're hydrating the page
 	setBoard: (id: string) => void; // gather from database
@@ -29,6 +32,8 @@ interface BoardStore {
 	createBoard: (name: string, user: User) => Promise<Board>;
 	isChatOpen: boolean;
 	setIsChatOpen: (open: boolean) => void;
+	viewMode: BoardViewMode;
+	setViewMode: (mode: BoardViewMode) => void;
 }
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
@@ -36,6 +41,8 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 
 	isChatOpen: false,
 	setIsChatOpen: (open: boolean) => set({ isChatOpen: open }),
+	viewMode: "BOARD",
+	setViewMode: (mode: BoardViewMode) => set({ viewMode: mode }),
 
 
 	setBoard: async (id) => {
