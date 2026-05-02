@@ -138,6 +138,8 @@ body {
 
 .note.active {
   border: 2px solid var(--blue);
+  background-color: --yellow;
+
 }
 
 .note-author {

@@ -23,7 +23,7 @@ export default function CollabLayer() {
 					// onPointerUp={handlePointerUp}
 					>
 						<div style={{
-							backgroundColor: "#00FF00",
+							backgroundColor: "#E9D0FF",
 							width: `20px`,
 							height: `20px`,
 						}}
