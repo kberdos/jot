@@ -98,7 +98,7 @@ export default function TableView() {
 								))
 							) : (
 								<tr>
-									<td colSpan={5}>No notes yet.</td>
+									<td colSpan={5}>No notes yet</td>
 								</tr>
 							)}
 						</tbody>
@@ -127,7 +127,7 @@ export default function TableView() {
 								))
 							) : (
 								<tr>
-									<td colSpan={3}>No sections yet.</td>
+									<td colSpan={3}>No sections yet</td>
 								</tr>
 							)}
 						</tbody>
