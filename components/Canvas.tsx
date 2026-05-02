@@ -26,7 +26,6 @@ import {
 	useSectionStore,
 } from "@/util/objects/section";
 import { GhostSectionComponent, SectionComponent } from "./Section";
-import BoardShareDialog from "./BoardShareDialog";
 
 const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 3;
@@ -98,7 +97,6 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
-	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -710,14 +708,6 @@ const Canvas = () => {
 					</svg>
 				</button>
 			</div>
-
-			{isShareDialogOpen && board && user && (
-				<BoardShareDialog
-					board={board}
-					user={user}
-					onClose={() => setIsShareDialogOpen(false)}
-				/>
-			)}
 
 		</div>
 	)
