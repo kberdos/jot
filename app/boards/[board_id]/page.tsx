@@ -13,6 +13,9 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
+const CURSOR_STALE_AFTER_MS = 15000
+const CURSOR_PRUNE_INTERVAL_MS = 3000
+
 export default function Home() {
   const params = useParams()
   const board_id = String(params.board_id)
@@ -23,7 +26,7 @@ export default function Home() {
   const { user } = useAuthStore()
   const userId = user?.id
   const { camera } = useCameraStore()
-  const { upsertCursor } = useCollabStore()
+  const { clearCursors, pruneStaleCursors, removeCursor, upsertCursor } = useCollabStore()
   const [accessState, setAccessState] = useState<"loading" | "ready" | "denied">("loading")
 
   const cameraRef = useRef(camera)
@@ -44,8 +47,10 @@ export default function Home() {
     let dbChannel: ReturnType<typeof supabase.channel> | null = null
     let handleMouseMove: ((e: MouseEvent) => void) | null = null
     let sendCursor: ReturnType<typeof throttle> | null = null
+    let pruneInterval: number | null = null
 
     const setupBoard = async () => {
+      clearCursors()
       setAccessState("loading")
 
       try {
@@ -78,6 +83,10 @@ export default function Home() {
             y: payload.y,
           }
           upsertCursor(cursor)
+        })
+        .on('broadcast', { event: 'cursor_leave' }, ({ payload }) => {
+          if (typeof payload.user_id !== "string") return
+          removeCursor(payload.user_id)
         })
         .subscribe()
 
@@ -184,6 +193,10 @@ export default function Home() {
 
       handleMouseMove = (e: MouseEvent) => sendCursor?.(e.clientX, e.clientY)
       window.addEventListener('mousemove', handleMouseMove)
+
+      pruneInterval = window.setInterval(() => {
+        pruneStaleCursors(CURSOR_STALE_AFTER_MS)
+      }, CURSOR_PRUNE_INTERVAL_MS)
     }
 
     setupBoard()
@@ -191,10 +204,19 @@ export default function Home() {
     return () => {
       isCurrent = false
       if (handleMouseMove) window.removeEventListener('mousemove', handleMouseMove)
+      if (pruneInterval) window.clearInterval(pruneInterval)
+      cursorChannel?.send({
+        type: 'broadcast',
+        event: 'cursor_leave',
+        payload: {
+          user_id: userRef.current?.id,
+        },
+      })
       cursorChannel?.unsubscribe()
       dbChannel?.unsubscribe()
       cursorChannelRef.current = null
       sendCursor?.cancel()
+      clearCursors()
     }
   }, [board_id, userId])
 

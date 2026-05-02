@@ -6,11 +6,25 @@ import { useState } from "react"
 import { type BoardViewMode, useBoardStore } from "@/util/objects/board"
 import { useAuthStore } from "@/util/auth/auth"
 import BoardShareDialog from "./BoardShareDialog"
+import { useArrowStore } from "@/util/objects/arrow"
+import { useNoteStore } from "@/util/objects/note"
+import { useSectionStore } from "@/util/objects/section"
+import { getTableData } from "@/util/tableData"
 
 const viewButtons: { mode: BoardViewMode; label: string }[] = [
 	{ mode: "BOARD", label: "Board" },
 	{ mode: "TABLE", label: "Table" },
 ]
+
+function getExportFileName(boardName?: string) {
+	const slug = boardName
+		?.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+
+	return `${slug || "jot-board-export"}.json`
+}
 
 export default function BoardNavbar() {
 	const {
@@ -22,12 +36,43 @@ export default function BoardNavbar() {
 	} = useBoardStore()
 	const { user } = useAuthStore()
 	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
+	const notes = useNoteStore((state) => state.notes)
+	const arrows = useArrowStore((state) => state.arrows)
+	const sections = useSectionStore((state) => state.sections)
+
+	const handleExportBoard = () => {
+		const { noteRows, sectionRows } = getTableData(notes, sections, arrows)
+		const exportData = {
+			board: {
+				id: board?.id,
+				name: board?.name,
+			},
+			notes: noteRows,
+			sections: sectionRows,
+		}
+		const json = JSON.stringify(exportData, null, 2)
+		const blob = new Blob([json], { type: "application/json" })
+		const url = URL.createObjectURL(blob)
+		const link = document.createElement("a")
+
+		link.href = url
+		link.download = getExportFileName(board?.name)
+		document.body.appendChild(link)
+		link.click()
+		link.remove()
+		URL.revokeObjectURL(url)
+	}
+	const [isRenaming, setIsRenaming] = useState(false)
+	const [newName, setNewName] = useState("")
+
+
 
 	const handleRenameBoard = async () => {
-		const name = prompt("Enter new name")
-		if (name) {
-			await renameBoard(name)
-		}
+		if (!newName.trim()) return
+
+		await renameBoard(newName)
+		setIsRenaming(false)
+		setNewName("")
 	}
 
 	return (
@@ -41,7 +86,10 @@ export default function BoardNavbar() {
 
 				<span
 					className="text-xl cursor-pointer hoverable"
-					onClick={handleRenameBoard}
+					onClick={() => {
+						setIsRenaming(true)
+						setNewName(board?.name || "")
+					}}
 				>
 					{board?.name || "Jot Design Brainstorm"}
 				</span>
@@ -66,6 +114,7 @@ export default function BoardNavbar() {
 						className="text-xl button blue-button nav-icon-button"
 						aria-label="Export board data as JSON"
 						title="Export board data as JSON"
+						onClick={handleExportBoard}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -97,6 +146,40 @@ export default function BoardNavbar() {
 					user={user}
 					onClose={() => setIsShareDialogOpen(false)}
 				/>
+			)}
+
+			{isRenaming && (
+				<div
+					className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+					onClick={() => setIsRenaming(false)}
+				>
+					<div
+						className="bg-white rounded-xl shadow-lg p-3 flex items-center gap-2 w-[320px]"
+						onClick={(e) => e.stopPropagation()} 
+					>
+						<input
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							placeholder="Untitled"
+							className="flex-1 px-3 py-2 rounded-md border outline-none text-xl"
+							style={{
+								borderColor: "var(--grey)",
+								outline: "none"
+							  }}
+							autoFocus
+							onKeyDown={(e) => {
+								if (e.key === "Enter") handleRenameBoard()
+							}}
+						/>
+
+						<button
+							onClick={handleRenameBoard}
+							className="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-xl"
+						>
+							Done
+						</button>
+					</div>
+				</div>
 			)}
 		</div>
 	)
