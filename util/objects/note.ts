@@ -13,6 +13,7 @@ export interface Note {
 	y: number;
 	width: number;
 	height: number
+	type?: "idea" | "question";
 	text: string;
 	color: string;
 	board_id: string;

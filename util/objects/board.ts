@@ -7,6 +7,8 @@ export interface Board {
 	id: string; /* UID for this board */
 	name: string; /* name of the board */
 	author_id: string /* OAuth user ID of board author / owner */
+	author?: string;
+	owner_email?: string;
 	last_modified_by: string | null;
 	created_at: string | null;
 	last_updated_at: string | null;

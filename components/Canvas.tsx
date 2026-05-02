@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import { useCameraStore } from "@/util/objects/camera";
@@ -27,6 +27,7 @@ import {
   useSectionStore,
 } from "@/util/objects/section";
 import { GhostSectionComponent, SectionComponent } from "./Section";
+import BoardShareDialog from "./BoardShareDialog";
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -103,6 +104,7 @@ const Canvas = () => {
 	} = useSectionStore()
 
 	const { user } = useAuthStore()
+	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 	const canvasRef = useRef<HTMLDivElement>(null)
 	const cameraRef = useRef(camera)
 	const activeNoteIdRef = useRef(activeNoteId)
@@ -747,11 +749,22 @@ const Canvas = () => {
 				</div>
 
 				{!isChatOpen && (
-					<button className="text-xl button blue-button">
+					<button
+						className="text-xl button blue-button"
+						onClick={() => setIsShareDialogOpen(true)}
+					>
 						Share
 					</button>
 				)}
 			</div>
+
+			{isShareDialogOpen && board && user && (
+				<BoardShareDialog
+					board={board}
+					user={user}
+					onClose={() => setIsShareDialogOpen(false)}
+				/>
+			)}
 
 			{!isChatOpen && (
 				<button
