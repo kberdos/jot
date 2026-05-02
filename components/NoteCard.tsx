@@ -39,6 +39,7 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 	const [isEditingText, setIsEditingText] = useState(false)
 	const [textDraft, setTextDraft] = useState(note.text)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const hasFocusedEditingSessionRef = useRef(false)
 
 	const growNoteForText = useCallback(() => {
 		const textarea = textareaRef.current
@@ -63,12 +64,22 @@ const NoteObj = ({ note, setActiveTool }: { note: Note; setActiveTool: (tool: "c
 	}
 
 	useEffect(() => {
-		if (!isEditingText) return
+		if (!isEditingText) {
+			hasFocusedEditingSessionRef.current = false
+			return
+		}
 
-		textareaRef.current?.focus()
-		textareaRef.current?.setSelectionRange(textDraft.length, textDraft.length)
+		if (hasFocusedEditingSessionRef.current) return
+
+		const textarea = textareaRef.current
+		if (!textarea) return
+
+		hasFocusedEditingSessionRef.current = true
+		textarea.focus()
+		const cursorPosition = textarea.value.length
+		textarea.setSelectionRange(cursorPosition, cursorPosition)
 		growNoteForText()
-	}, [growNoteForText, isEditingText, textDraft.length])
+	}, [growNoteForText, isEditingText])
 
 	useEffect(() => {
 		growNoteForText()
