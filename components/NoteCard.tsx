@@ -144,14 +144,16 @@ const NoteObj = ({ note }: { note: Note }) => {
 			onPointerMove={handlePointerMove}
 			onPointerUp={handlePointerUp}
 		>
-			<div style={{
-				backgroundColor: note.color,
-				border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
-				width: `${note.width}px`,
-				height: `${note.height}px`,
-				boxSizing: "border-box",
-				position: "relative",
-			}}
+			<div 
+				className={`note ${note.type}`}
+				style={{
+					// backgroundColor: note.color,
+					border: isActive ? "3px solid var(--blue)" : "3px solid transparent",
+					width: `${note.width}px`,
+					height: `${note.height}px`,
+					boxSizing: "border-box",
+					position: "relative",
+				}}
 			>
 				<textarea
 					ref={textareaRef}

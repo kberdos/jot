@@ -407,7 +407,7 @@ body {
 /* hidden by default */
 .note-hover-menu {
   position: absolute;
-  left: 40px;
+  left: 20px;
   top: 50%;
   transform: translateY(-50%);
 
@@ -416,7 +416,7 @@ body {
   gap: 8px;
 
   opacity: 0;
-  pointer-events: none;
+  pointer-events: auto;
   transition: opacity 0.15s ease;
 }
 
@@ -440,6 +440,14 @@ body {
 
 .question {
   background-color: var(--light-pink);
+}
+
+.idea:hover {
+  background-color: var(--yellow);
+}
+
+.question:hover {
+  background-color: var(--pink);
 }
 
 /* board grid */
