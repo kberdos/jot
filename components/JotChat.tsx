@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { useBoardStore } from "@/util/objects/board";
 import { useChatContextStore } from "@/util/objects/chat";
-import { useNoteStore } from "@/util/objects/note";
+import { NoteType, useNoteStore } from "@/util/objects/note";
 import { useSectionStore } from "@/util/objects/section";
 
 interface Message {
@@ -13,6 +13,7 @@ interface Message {
     text: string;
     author_name: string;
     color: string;
+    type: NoteType;
   }[];
 }
 
@@ -148,6 +149,7 @@ export default function JotChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { board, setIsChatOpen } = useBoardStore();
   const notes = useNoteStore((state) => state.notes);
   const highlightNotes = useNoteStore((state) => state.highlightNotes);
@@ -179,6 +181,14 @@ export default function JotChat() {
 
   const clampWidth = (value: number) => Math.max(300, Math.min(value, 1200));
 
+  const resizeInput = () => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+  };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
     const trimmedInput = input.trim();
@@ -187,6 +197,7 @@ export default function JotChat() {
       text: note.text,
       author_name: note.author_name,
       color: note.color,
+      type: note.type,
     }));
     const newMessages: Message[] = [
       ...messages,
@@ -198,6 +209,7 @@ export default function JotChat() {
     ];
     setMessages(newMessages);
     setInput("");
+    requestAnimationFrame(resizeInput);
     clearNoteContext();
     setLoading(true);
 
@@ -357,8 +369,8 @@ export default function JotChat() {
                   {m.contextNotes.map((note) => (
                     <div
                       key={note.id}
-                      style={{ backgroundColor: note.color }}
-                      className="relative h-[82px] w-[82px] shrink-0 border border-[rgba(0,0,0,0.14)] p-2 text-left"
+                      style={{ width: 82, height: 82, minHeight: 0 }}
+                      className={`note ${note.type} relative shrink-0 rounded-none border border-[rgba(0,0,0,0.14)] p-2 text-left`}
                     >
                       <div className="h-[54px] overflow-hidden text-[9px] leading-tight text-black">
                         {note.text || "Untitled note"}
@@ -392,8 +404,8 @@ export default function JotChat() {
               {contextNotes.map((note) => (
                 <div
                   key={note.id}
-                  style={{ backgroundColor: note.color }}
-                  className="relative h-[140px] w-[140px] shrink-0 border border-[rgba(0,0,0,0.12)] p-3 text-left"
+                  style={{ width: 140, height: 140, minHeight: 0 }}
+                  className={`note ${note.type} relative shrink-0 rounded-none border border-[rgba(0,0,0,0.12)] p-3 text-left`}
                 >
                   <button
                     aria-label="Remove note from chat context"
@@ -412,12 +424,21 @@ export default function JotChat() {
               ))}
             </div>
           )}
-          <div className="flex items-center">
-            <input
-              className="flex-1 bg-transparent outline-none text-sm"
+          <div className="flex items-end">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className="max-h-[180px] min-h-[32px] flex-1 resize-none overflow-y-auto bg-transparent py-1 text-sm leading-5 outline-none"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onChange={(e) => {
+                setInput(e.target.value);
+                requestAnimationFrame(resizeInput);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || e.shiftKey) return;
+                e.preventDefault();
+                sendMessage();
+              }}
               placeholder="Write a message..."
             />
             <button
