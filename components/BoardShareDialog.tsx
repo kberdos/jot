@@ -106,7 +106,7 @@ export default function BoardShareDialog(props: {
 			} else {
 				setPeople(data.people ?? [])
 				setEmail("")
-				setMessage("Board shared.")
+				setMessage("Board shared")
 			}
 		} catch {
 			setError("Could not share this board.")
@@ -117,7 +117,7 @@ export default function BoardShareDialog(props: {
 
 	const handleCopyLink = async () => {
 		await navigator.clipboard.writeText(window.location.href)
-		setMessage("Link copied.")
+		setMessage("Link copied")
 		setError("")
 	}
 

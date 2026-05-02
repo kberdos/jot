@@ -580,3 +580,7 @@ body {
 .section-database-table td:nth-child(3) {
   width: 180px;
 }
+
+.subtext {
+  padding-top: 0.5rem;
+}
