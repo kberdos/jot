@@ -522,7 +522,7 @@ const Canvas = () => {
 				)}
 			</div>
 
-			<div
+			{/* <div
 				style={{
 					position: "absolute",
 					left: 20,
@@ -532,9 +532,9 @@ const Canvas = () => {
 			>
 				{`Camera X: ${Math.round(camera.x * 100) / 100}, Y: ${Math.round(camera.y * 100) / 100
 					}, Zoom: ${Math.round(camera.zoom * 100) / 100}`}
-			</div>
+			</div> */}
 
-			<button
+			{/* <button
 				style={{
 					position: "absolute",
 					left: 400,
@@ -548,7 +548,7 @@ const Canvas = () => {
 				onPointerDown={(e) => e.stopPropagation()}
 			>
 				Reset View
-			</button>
+			</button> */}
 
 			{(highlightedNoteIds.length > 0 || highlightedSectionIds.length > 0) && (
 				<button
