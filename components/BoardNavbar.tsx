@@ -179,7 +179,7 @@ export default function BoardNavbar() {
 				{viewButtons.map(({ mode, label }) => (
 					<button
 						key={mode}
-						className={`text - xl button shadow - [0_10px_20px_rgba(0, 0, 0, 0.50)] ${viewMode === mode ? "grey-button-active" : "white-button"
+						className={`text-xl button shadow - [0_10px_20px_rgba(0, 0, 0, 0.50)] ${viewMode === mode ? "grey-button-active" : "white-button"
 							} `}
 						onClick={() => setViewMode(mode)}
 					>
