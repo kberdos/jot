@@ -4,6 +4,7 @@ Jot
 Core repository for CS1377's final project. Authored by Kazuya Erdos, Lyra Ymeraga, Emily Olson, and Rachel Brooks.
 
 ## Prerequisites
+- `pnpm` is preferred
 - NextJS with the [App Router](https://nextjs.org/docs/app) is required.
 - Since this project is not development-ready on Google Cloud, you *must* be added as a test user to the deployment. CS1377 staff have all been added.
 
