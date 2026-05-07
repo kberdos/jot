@@ -37,6 +37,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     - `app/api/shared-boards/route.ts` : Server route for loading boards shared with the current user.
 - `components/` : Contains the React components that make up the board UI.
     - `Canvas.tsx`, `NoteCard.tsx`, `Section.tsx`, and `Arrow.tsx` : The interactive board surface and board objects.
+    - `CanvasToolbar.tsx`, `useCanvasGestures.ts`, and `useCanvasHotkeys.ts` : Canvas controls, pan/zoom gestures, and keyboard shortcuts split out from the main canvas.
     - `BoardNavbar.tsx`, `BoardShareDialog.tsx`, and `BoardPreview.tsx` : Board controls, sharing UI, and dashboard previews.
     - `JotChat.tsx`, `TableView.tsx`, `Collab.tsx`, and `Overlay.tsx` : Chat, alternate table view, collaborator cursors, and the main board wrapper.
 - `util/` : Contains shared state, data helpers, and service clients.
