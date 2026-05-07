@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Jot
+===
 
-## Getting Started
+Core repository for CS1377's final project. Authored by Kazuya Erdos, Lyra Ymeraga, Emily Olson, and Rachel Brooks.
 
-First, run the development server:
+## Prerequisites
+- NextJS with the [App Router](https://nextjs.org/docs/app) is required.
+- Since this project is not development-ready on Google Cloud, you *must* be added as a test user to the deployment. CS1377 staff have all been added.
+
+- You must also have access to the environment secrets to the run the project locally:
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+GEMINI_API_KEY=...
+```
+
+
+## Running locally
+
+To get started, run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm i # install deps
+pnpm dev # start the dev server
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+- `app/` : App Router root that contains the pages and API routes.
+    - `app/page.tsx` : Home page that handles login, board creation/deletion, and the "my boards" / "shared boards" dashboard.
+    - `app/boards/[board_id]/page.tsx` : Main board page. Loads board state, subscribes to Supabase realtime updates, and renders the board overlay.
+    - `app/api/gemini/route.ts` : Server route for JotChat's Gemini calls and board-editing tool actions.
+    - `app/api/board-share/route.ts` : Server route for adding, listing, and removing people with access to a board.
+    - `app/api/shared-boards/route.ts` : Server route for loading boards shared with the current user.
+- `components/` : Contains the React components that make up the board UI.
+    - `Canvas.tsx`, `NoteCard.tsx`, `Section.tsx`, and `Arrow.tsx` : The interactive board surface and board objects.
+    - `BoardNavbar.tsx`, `BoardShareDialog.tsx`, and `BoardPreview.tsx` : Board controls, sharing UI, and dashboard previews.
+    - `JotChat.tsx`, `TableView.tsx`, `Collab.tsx`, and `Overlay.tsx` : Chat, alternate table view, collaborator cursors, and the main board wrapper.
+- `util/` : Contains shared state, data helpers, and service clients.
+    - `util/objects/` : Zustand stores and types for boards, notes, arrows, sections, camera state, chat state, and collaborators.
+    - `util/auth/` : Supabase auth helpers and auth state.
+    - `util/supabase/` : Supabase browser and server clients.
+    - `util/tableData.ts`, `util/noteCoordinates.ts`, and `util/pointerfunctions.ts` : Board helper functions used by multiple components.
+- `assets/` : Image assets.
+- `public/` : Static files served directly.
