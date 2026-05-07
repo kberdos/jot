@@ -1,6 +1,8 @@
 Jot
 ===
 
+[Try it out](https://jot.kazuyaerdos.com)
+
 Core repository for CS1377's final project. Authored by Kazuya Erdos, Lyra Ymeraga, Emily Olson, and Rachel Brooks.
 
 ## Prerequisites
