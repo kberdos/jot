@@ -137,6 +137,7 @@ const ChatText = ({ text }: { text: string }) => {
 
 export default function JotChat() {
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { board, setIsChatOpen } = useBoardStore();
   const notes = useNoteStore((state) => state.notes);
@@ -185,7 +186,13 @@ export default function JotChat() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (loading || !input.trim()) return;
+
+    if (!board) {
+      setErrorMessage("Board is still loading. Try again in a moment.");
+      return;
+    }
+
     const trimmedInput = input.trim();
     const contextSnapshot = contextNotes.map((note) => ({
       id: note.id,
@@ -207,59 +214,80 @@ export default function JotChat() {
     requestAnimationFrame(resizeInput);
     clearNoteContext();
     setLoading(true);
+    setErrorMessage(null);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-
-    const res = await fetch("/api/gemini", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        messages: newMessages,
-        boardId: board!.id, // need a board
-        contextNoteIds: contextNotes.map((note) => note.id),
-      }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("API error:", text);
-      setLoading(false);
-      return;
-    }
-
-    let data;
     try {
-      data = await res.json();
-    } catch (e) {
-      console.error("Invalid JSON response:", e);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        throw new Error("You need to sign in before using JotChat.");
+      }
+
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          messages: newMessages.map((message) => ({
+            role: message.role,
+            parts: [{ text: message.parts[0].text }],
+          })),
+          boardId: board.id,
+          contextNoteIds: contextNotes.map((note) => note.id),
+        }),
+      });
+
+      if (!res.ok) {
+        let message = "JotChat request failed.";
+        try {
+          const errorData = await res.clone().json();
+          if (typeof errorData.error === "string") {
+            message = errorData.error;
+          }
+        } catch {
+          message = await res.text();
+        }
+
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+
+      if (data.clearHighlights) {
+        clearHighlightedNotes();
+        clearHighlightedSections();
+      } else if (
+        Array.isArray(data.highlightNoteIds) ||
+        Array.isArray(data.highlightSectionIds)
+      ) {
+        highlightNotes(
+          Array.isArray(data.highlightNoteIds) ? data.highlightNoteIds : [],
+        );
+        highlightSections(
+          Array.isArray(data.highlightSectionIds)
+            ? data.highlightSectionIds
+            : [],
+        );
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "model",
+          parts: [{ text: typeof data.text === "string" ? data.text : "" }],
+        },
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "JotChat request failed.";
+      console.error("JotChat error:", error);
+      setErrorMessage(message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (data.clearHighlights) {
-      clearHighlightedNotes();
-      clearHighlightedSections();
-    } else if (
-      Array.isArray(data.highlightNoteIds) ||
-      Array.isArray(data.highlightSectionIds)
-    ) {
-      highlightNotes(
-        Array.isArray(data.highlightNoteIds) ? data.highlightNoteIds : [],
-      );
-      highlightSections(
-        Array.isArray(data.highlightSectionIds) ? data.highlightSectionIds : [],
-      );
-    }
-
-    setMessages((prev) => [
-      ...prev,
-      { role: "model", parts: [{ text: data.text }] },
-    ]);
-    setLoading(false);
   };
 
   return (
@@ -385,6 +413,11 @@ export default function JotChat() {
           </div>
         ))}
         {loading && <div className="self-start text-gray-400">Thinking...</div>}
+        {errorMessage && (
+          <div className="self-start rounded bg-red-50 p-2 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
       </div>
       {/* <div className="flex gap-2 p-3">
 				<input
@@ -442,6 +475,7 @@ export default function JotChat() {
             />
             <button
               onClick={sendMessage}
+              disabled={loading || !input.trim() || !board}
               className="ml-2 w-8 h-8 flex text-xl font-bold items-center justify-center rounded-full bg-white shadow hover:bg-[var(--grey)]"
             >
               ↑
